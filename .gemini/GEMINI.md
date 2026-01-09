@@ -38,11 +38,9 @@
 
 | 需求 | 首选 | 降级方案 |
 |------|------|---------|
-| 本地文件/命令 | Desktop Commander | 内置工具 |
-| 技术文档查询 | Context7 | DuckDuckGo → Fetch |
+| 技术文档查询 | Context7 | 内置搜索 |
 | 复杂任务规划 | Sequential-Thinking | 手动分解 |
-| 网页搜索 | DuckDuckGo | WebSearch |
-| GitHub 文档 | DeepWiki | 直接访问 |
+| 本地文件/命令 | 内置工具 | - |
 
 ### MCP 调用规则
 
@@ -55,10 +53,10 @@
 1. `resolve-library-id` → 确定库标识
 2. `get-library-docs` → 获取文档（tokens ≤ 5000）
 
-**Desktop Commander 使用场景**：
-- 代码检索、架构走查
-- 跨文件引用查找
-- 批量重构、脚本执行
+**Sequential-Thinking 使用场景**：
+- 复杂功能设计和规划
+- 多步骤任务分解
+- 架构决策分析
 
 **错误处理**：
 - 429 限流：退避 20s，降低参数范围

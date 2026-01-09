@@ -11,3 +11,5 @@ out/
 
 /.claudeignore
 /.geminiignore
+
+.DS_Store
