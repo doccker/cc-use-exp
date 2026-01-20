@@ -93,7 +93,31 @@
 
 ## 快速部署
 
-### Claude Code
+### 一键同步（推荐）
+
+**macOS/Linux**：
+```bash
+./sync-config.sh
+```
+
+**Windows**：
+```cmd
+sync-config.bat
+```
+
+脚本会自动将 `.claude/` 和 `.gemini/` 同步到用户根目录（`~/.claude/` 和 `~/.gemini/`），文件冲突时提供以下选项：
+
+| 选项 | 按键 | 说明 |
+|------|------|------|
+| 覆盖当前文件 | `y` | 仅覆盖这一个 |
+| 跳过当前文件 | `N` 或回车 | 默认，仅跳过这一个 |
+| 全部覆盖 | `a` | 后续所有文件都覆盖 |
+| 全部跳过 | `s` | 后续所有文件都跳过 |
+
+### 手动部署
+
+<details>
+<summary><strong>Claude Code</strong></summary>
 
 ```bash
 # 只覆盖配置目录，保留历史记录
@@ -105,8 +129,10 @@ cp -r .claude/templates ~/.claude/
 cp -r .claude/tasks ~/.claude/
 cp .claude/CLAUDE.md ~/.claude/
 ```
+</details>
 
-### Gemini CLI
+<details>
+<summary><strong>Gemini CLI</strong></summary>
 
 ```bash
 # 只覆盖配置，保留认证信息
@@ -115,6 +141,7 @@ cp -r .gemini/commands ~/.gemini/
 cp .gemini/GEMINI.md ~/.gemini/
 cp .gemini/settings.json ~/.gemini/
 ```
+</details>
 
 > **注意**：Claude Code 的 `~/.claude/` 包含历史记录（`history.jsonl`、`projects/` 等），不能整体删除，只覆盖配置目录。Gemini CLI 的 `~/.gemini/` 包含认证信息（`oauth_creds.json`、`google_accounts.json`），同样只覆盖配置。
 
