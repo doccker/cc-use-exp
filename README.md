@@ -9,7 +9,7 @@
 >
 > 按费力度从低到高，用最少操作获得最大帮助
 
-[![version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/doccker/cc-use-exp)
+[![version](https://img.shields.io/badge/version-1.0.7-blue.svg)](https://github.com/doccker/cc-use-exp)
 [![license](https://img.shields.io/badge/license-Custom-green.svg)](./LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-Config-orange.svg)](https://docs.anthropic.com/claude-code)
 [![Gemini CLI](https://img.shields.io/badge/Gemini_CLI-Config-purple.svg)](https://github.com/google-gemini/gemini-cli)
