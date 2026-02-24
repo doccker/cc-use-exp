@@ -71,6 +71,36 @@ public class Example {
 
 ---
 
+## DTO/VO 类规范
+
+| 规则 | 说明 |
+|------|------|
+| ❌ 禁止手写 getter/setter | DTO、VO、Request、Response 类一律使用 Lombok |
+| ✅ 使用 `@Data` | 普通 DTO |
+| ✅ 使用 `@Value` | 不可变 DTO |
+| ✅ 使用 `@Builder` | 字段较多时配合使用 |
+| ⚠️ Entity 类慎用 `@Data` | JPA Entity 的 equals/hashCode 会影响 Hibernate 代理 |
+
+```java
+// ❌ 手写 getter/setter
+public class UserDTO {
+    private Long id;
+    private String name;
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    // ... 大量样板代码
+}
+
+// ✅ 使用 Lombok
+@Data
+public class UserDTO {
+    private Long id;
+    private String name;
+}
+```
+
+---
+
 ## 异常处理
 
 ```java

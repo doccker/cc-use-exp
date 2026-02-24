@@ -195,6 +195,8 @@ const debouncedSearch = useDebounceFn((keyword) => api.search(keyword), 300)
 
 ```
 src/
+├── assets/
+│   └── styles/          # 全局/共享样式
 ├── api/                 # API 请求
 ├── components/          # 通用组件
 ├── composables/         # 组合式函数
@@ -205,6 +207,24 @@ src/
 ├── views/               # 页面组件
 ├── App.vue
 └── main.ts
+```
+
+---
+
+## 样式管理规范
+
+| 规则 | 说明 |
+|------|------|
+| ❌ 禁止在 `.vue` 中写大段样式 | `<style>` 块不超过 20 行 |
+| ❌ 禁止在 `.tsx` 中写大段内联样式 | 样式对象/CSS-in-JS 不超过 20 行 |
+| ✅ 共享样式抽到 `src/assets/styles/` | 按模块拆分文件 |
+| ✅ 组件内只保留极简样式 | Vue: scoped 微调；React: className 引用 |
+
+```
+src/assets/styles/
+├── variables.scss       # 变量（颜色、间距、字号）
+├── common.scss          # 通用样式
+└── [module].scss        # 按模块拆分
 ```
 
 ---
