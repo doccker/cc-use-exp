@@ -35,7 +35,7 @@ confirm_overwrite() {
     # 询问用户
     echo -e "${YELLOW}文件已存在: ${file}${NC}"
     echo -ne "是否覆盖? [y/N/a(全部覆盖)/s(全部跳过)]: "
-    read -r response
+    read -r response < /dev/tty
 
     case "${response}" in
         [aA])

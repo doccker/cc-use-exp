@@ -64,12 +64,20 @@ goto :eof
 
         REM 检查文件是否存在
         if exist "!dest_file!" (
-            call :confirm_overwrite "!dest_file!" "%%f"
-            if errorlevel 1 (
-                echo [×] 已跳过: !dest_file!
-            ) else (
+            REM 先检查全局策略
+            if "!OVERWRITE_ALL!"=="yes" (
                 copy /y "%%f" "!dest_file!" >nul
                 echo [√] 已覆盖: !dest_file!
+            ) else if "!OVERWRITE_ALL!"=="no" (
+                echo [×] 已跳过: !dest_file!
+            ) else (
+                call :confirm_overwrite "!dest_file!" "%%f"
+                if errorlevel 1 (
+                    echo [×] 已跳过: !dest_file!
+                ) else (
+                    copy /y "%%f" "!dest_file!" >nul
+                    echo [√] 已覆盖: !dest_file!
+                )
             )
         ) else (
             copy "%%f" "!dest_file!" >nul
