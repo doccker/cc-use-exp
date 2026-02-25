@@ -101,6 +101,35 @@ public class UserDTO {
 
 ---
 
+## 批量查询规范
+
+| 规则 | 说明 |
+|------|------|
+| ❌ 禁止 IN 子句超过 500 个参数 | SQL 解析开销大，执行计划不稳定 |
+| ✅ 超过时分批查询 | 每批 500，合并结果 |
+| ✅ 封装通用工具方法 | 避免每处手写分批逻辑 |
+
+```java
+// ❌ 1700 个 ID 一次查询
+List<User> users = userRepository.findByIdIn(allIds); // IN 子句过长
+
+// ✅ 分批查询工具方法
+public static <T, R> List<R> batchQuery(List<T> params, int batchSize,
+                                         Function<List<T>, List<R>> queryFn) {
+    List<R> result = new ArrayList<>();
+    for (int i = 0; i < params.size(); i += batchSize) {
+        List<T> batch = params.subList(i, Math.min(i + batchSize, params.size()));
+        result.addAll(queryFn.apply(batch));
+    }
+    return result;
+}
+
+// 使用
+List<User> users = batchQuery(allIds, 500, ids -> userRepository.findByIdIn(ids));
+```
+
+---
+
 ## 异常处理
 
 ```java
