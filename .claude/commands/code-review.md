@@ -66,6 +66,11 @@ description: 对当前分支的变更进行代码审查
 - 不必要的内存分配
 - 缓存策略
 
+### 7. 文件规模（注意）
+- 检查 diff 涉及的每个文件总行数，对照语言阈值（Java 300 / Go 400 / Vue 200 / TSX/JSX 200 / TS/JS 300 / Python 300）
+- 超限文件标记为 `[Improvement]`，给出具体拆分建议（按职责拆分、提取子组件、抽工具类等）
+- 阈值详见 `rules/file-size-limit.md`
+
 ## 输出格式
 
 ```markdown
