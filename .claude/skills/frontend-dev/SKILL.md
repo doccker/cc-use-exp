@@ -229,6 +229,63 @@ src/assets/styles/
 
 ---
 
+## API 错误处理规范
+
+| 规则 | 说明 |
+|------|------|
+| ❌ 禁止静默忽略非成功响应 | `res.code !== 200` 时必须提示用户 |
+| ✅ 统一错误提示 | 非成功响应统一 `message.error` 提示 |
+| ✅ 网络异常也要处理 | `try/catch` 捕获请求异常 |
+
+```typescript
+// ❌ 只处理成功，非 200 静默忽略
+const res = await api.getList(params)
+if (res.code === 200) {
+  list.value = res.data
+}
+
+// ✅ 成功 + 失败都处理
+try {
+  const res = await api.getList(params)
+  if (res.code === 200) {
+    list.value = res.data
+  } else {
+    message.error(res.message || '加载失败')
+  }
+} catch (e) {
+  message.error('网络异常，请稍后重试')
+}
+```
+
+---
+
+## 类型复用规范
+
+| 规则 | 说明 |
+|------|------|
+| ❌ 禁止多个文件重复定义相同接口 | `PageResponse`、`BaseResult` 等 |
+| ✅ 通用类型统一放 `@/types/common.ts` | 全局导出，各处引用 |
+
+```typescript
+// ❌ 每个 api 文件都定义一遍
+// api/user.ts
+interface PageResponse<T> { list: T[]; total: number }
+// api/order.ts
+interface PageResponse<T> { list: T[]; total: number } // 重复
+
+// ✅ 统一定义，各处引用
+// types/common.ts
+export interface PageResponse<T> {
+  list: T[]
+  total: number
+}
+
+// api/user.ts
+import type { PageResponse } from '@/types/common'
+```
+
+---
+
 ## 详细参考
 
 完整规范见 `references/frontend-style.md`，包含：

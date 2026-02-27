@@ -162,6 +162,49 @@ records.forEach(r -> r.setDeviceCount(countMap.getOrDefault(r.getDeviceId(), 0L)
 
 ---
 
+## 并发安全规范
+
+| 规则 | 说明 |
+|------|------|
+| ❌ 禁止 read-modify-write | 先读余额再写回，并发下丢失更新 |
+| ❌ 禁止 check-then-act 无兜底 | 先检查再操作，并发下条件失效 |
+| ✅ 使用原子更新 SQL | `UPDATE SET balance = balance + :delta WHERE id = :id` |
+| ✅ 或使用乐观锁 | `@Version` 字段 + 重试机制 |
+| ✅ 唯一索引兜底 | 防重复插入的最后防线 |
+
+```java
+// ❌ read-modify-write 竞态条件
+PointsAccount account = accountRepo.findById(id);
+account.setBalance(account.getBalance() + points); // 并发时丢失更新
+accountRepo.save(account);
+
+// ✅ 方案一：原子更新 SQL
+@Modifying
+@Query("UPDATE PointsAccount SET balance = balance + :points WHERE id = :id")
+int addBalance(@Param("id") Long id, @Param("points") int points);
+
+// ✅ 方案二：乐观锁
+@Version
+private Long version; // Entity 中添加版本字段
+```
+
+```java
+// ❌ check-then-act 无兜底（并发下可能重复结算）
+if (!rewardRepo.existsByTenantIdAndPeriod(tenantId, period)) {
+    rewardRepo.save(new RankingReward(...));
+}
+
+// ✅ 唯一索引兜底 + 异常捕获
+// DDL: UNIQUE INDEX uk_tenant_period (tenant_id, ranking_type, period, rank_position)
+try {
+    rewardRepo.save(new RankingReward(...));
+} catch (DataIntegrityViolationException e) {
+    log.warn("重复结算已被唯一索引拦截: tenantId={}, period={}", tenantId, period);
+}
+```
+
+---
+
 ## 异常处理
 
 ```java
@@ -266,6 +309,32 @@ public class UserController {
             .orElse(ResponseEntity.notFound().build());
     }
 }
+```
+
+---
+
+## 输入校验规范
+
+| 规则 | 说明 |
+|------|------|
+| ❌ 禁止 `@RequestBody` 不加 `@Valid` | 所有请求体必须校验 |
+| ✅ DTO 字段加约束注解 | `@NotBlank`、`@Size`、`@Pattern` 等 |
+| ✅ 枚举/状态字段白名单校验 | 自定义校验器或 `@Pattern` |
+
+```java
+// ❌ 无校验，任意输入直接进入业务逻辑
+@PostMapping("/ship")
+public Result ship(@RequestBody ShippingRequest request) { ... }
+
+// ✅ 完整校验
+@PostMapping("/ship")
+public Result ship(@RequestBody @Valid ShippingRequest request) { ... }
+
+public record ShippingRequest(
+    @NotNull Long orderId,
+    @NotBlank @Size(max = 500) String shippingInfo,
+    @Pattern(regexp = "pending|shipped|delivered") String giftStatus
+) {}
 ```
 
 ---
