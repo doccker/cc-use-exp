@@ -130,6 +130,38 @@ List<User> users = batchQuery(allIds, 500, ids -> userRepository.findByIdIn(ids)
 
 ---
 
+## N+1 查询防范
+
+| 规则 | 说明 |
+|------|------|
+| ❌ 禁止循环内调用 Repository/Mapper | stream/forEach/for 内每次迭代触发一次查询 |
+| ✅ 循环外批量查询，结果转 Map | 查询次数从 N 降为 1（或 distinct 数） |
+
+```java
+// ❌ N+1：循环内逐行查询 count
+records.forEach(record -> {
+    long count = deviceRepo.countByDeviceId(record.getDeviceId()); // 每条触发一次查询
+    record.setDeviceCount(count);
+});
+
+// ✅ 循环外批量查询 + Map 查找
+List<String> deviceIds = records.stream()
+    .map(Record::getDeviceId).distinct().collect(Collectors.toList());
+Map<String, Long> countMap = deviceRepo.countByDeviceIdIn(deviceIds).stream()
+    .collect(Collectors.toMap(CountDTO::getDeviceId, CountDTO::getCount));
+records.forEach(r -> r.setDeviceCount(countMap.getOrDefault(r.getDeviceId(), 0L)));
+```
+
+常见 N+1 场景及修复模式：
+
+| 场景 | 循环内（❌） | 循环外（✅） |
+|------|------------|------------|
+| count | `repo.countByXxx(id)` | `repo.countByXxxIn(ids)` → `Map<id, count>` |
+| findById | `repo.findById(id)` | `repo.findByIdIn(ids)` → `Map<id, entity>` |
+| exists | `repo.existsByXxx(id)` | `repo.findXxxIn(ids)` → `Set<id>` + `set.contains()` |
+
+---
+
 ## 异常处理
 
 ```java
@@ -242,7 +274,7 @@ public class UserController {
 
 | 陷阱 | 解决方案 |
 |------|---------|
-| N+1 查询 | 使用 JOIN FETCH 或批量查询 |
+| N+1 查询 | 见「N+1 查询防范」章节 |
 | 循环拼接字符串 | 使用 `StringBuilder` |
 | 频繁装箱拆箱 | 使用原始类型流 |
 | 未指定集合初始容量 | `new ArrayList<>(size)` |
