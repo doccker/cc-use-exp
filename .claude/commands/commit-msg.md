@@ -44,6 +44,7 @@ git diff
 - body: 变更详情，用列表形式，中文
 - 不要加 emoji
 - 不要加 AI 生成声明
+- 不要加 Co-Authored-By
 
 ### 4. 输出格式
 
@@ -66,8 +67,8 @@ git diff
 
 ## 快速提交
 
-确认后执行：
-git add . && git commit -m "<生成的message>"
+复制以下命令手动执行（不要由 Claude Code 代执行）：
+git add <文件列表> && git commit -m "<生成的message>"
 ```
 
 ---
