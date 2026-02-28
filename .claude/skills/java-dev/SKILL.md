@@ -372,6 +372,7 @@ log.debug("Finding user by id: " + userId);
 | `references/collections.md` | 不可变集合（Guava）、字符串分割 |
 | `references/concurrency.md` | 线程池配置、CompletableFuture 超时 |
 | `references/code-patterns.md` | 卫语句、枚举优化、策略工厂模式 |
+| `references/date-time.md` | 日期加减、账期计算、禁止月末对齐 |
 
 ---
 

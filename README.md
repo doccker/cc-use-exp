@@ -165,6 +165,7 @@ cp .gemini/settings.json ~/.gemini/
 | `ops-safety.md` | 危险命令确认、回滚方案、风险提示 | 始终生效（详细规范见 skills） |
 | `doc-sync.md` | 配置/结构变更时提醒更新文档 | 修改配置时 |
 | `bash-style.md` | Bash 核心规范：禁止行尾注释 | 始终生效（详细规范见 skills） |
+| `date-calc.md` | 日期加减保持日不变，禁止默认月末对齐 | 始终生效 |
 
 **效果示例**：
 - Claude 不会修改测试来适配错误代码
@@ -304,7 +305,8 @@ A: 在 `.claude/skills/` 下创建新目录（如 `rust-dev/`），添加 `SKILL
 │   ├── claude-code-defensive.md  # 防御性规则
 │   ├── ops-safety.md             # 运维安全（核心）
 │   ├── doc-sync.md               # 文档同步
-│   └── bash-style.md             # Bash 核心规范
+│   ├── bash-style.md             # Bash 核心规范
+│   └── date-calc.md              # 日期计算规则
 ├── skills/                       # 技能：按需加载（完整版）
 │   ├── go-dev/
 │   ├── java-dev/

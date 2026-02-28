@@ -288,12 +288,10 @@ import type { PageResponse } from '@/types/common'
 
 ## 详细参考
 
-完整规范见 `references/frontend-style.md`，包含：
-- 完整 UI 风格约束
-- Vue 3 编码规范详解
-- Pinia 状态管理
-- API 请求封装
-- 性能优化详解
+| 文件 | 内容 |
+|------|------|
+| `references/frontend-style.md` | UI 风格、Vue 3 规范、Pinia、API 封装、性能优化 |
+| `references/date-time.md` | dayjs/date-fns 日期加减、账期计算、禁止月末对齐 |
 
 ---
 
