@@ -5,7 +5,7 @@ fi
 
 set -euo pipefail
 
-# 同步 .claude、.gemini 和 .codex 配置到用户根目录
+# 同步 .claude、.gemini、.codex 和 .cursor 配置到用户根目录
 
 # 颜色输出
 RED='\033[0;31m'
@@ -414,6 +414,120 @@ if [[ -d "${SCRIPT_DIR}/.codex" ]]; then
     print_line "${YELLOW}  已保留 ~/.codex 运行态文件（auth/history/logs/cache）${NC}"
 else
     print_line "${YELLOW}[Codex] 源目录不存在，跳过${NC}"
+fi
+
+printf '\n'
+
+# --- Cursor ---
+if [[ -d "${SCRIPT_DIR}/.cursor" ]]; then
+    print_line "${GREEN}[Cursor] 开始同步${NC}"
+
+    mkdir -p ~/.cursor/rules ~/.cursor/skills ~/.cursor/templates
+
+    CURSOR_RULES_SRC="${SCRIPT_DIR}/.cursor/rules"
+    CURSOR_SKILLS_SRC="${SCRIPT_DIR}/.cursor/skills"
+    CURSOR_COMMANDS_SRC="${SCRIPT_DIR}/.cursor/commands"
+    CURSOR_TEMPLATES_SRC="${SCRIPT_DIR}/.cursor/templates"
+    CURSOR_RULES_MANIFEST="${HOME}/.cursor/rules/.cc-use-exp-managed"
+    CURSOR_SKILLS_MANIFEST="${HOME}/.cursor/skills/.cc-use-exp-managed"
+
+    CURSOR_RULES_SYNCED=0
+    CURSOR_SKILLS_SYNCED=0
+    CURSOR_COMMANDS_SYNCED=0
+
+    # rules → ~/.cursor/rules/
+    if [[ -d "$CURSOR_RULES_SRC" ]]; then
+        new_manifest="$(mktemp)"
+        rule_list="$(mktemp)"
+
+        find "$CURSOR_RULES_SRC" -maxdepth 1 -type f \( -name '*.mdc' -o -name '*.md' \) | LC_ALL=C sort > "$rule_list"
+
+        while IFS= read -r rule_file; do
+            [[ -n "$rule_file" ]] || continue
+            rule_name="$(basename "$rule_file")"
+            printf '%s\n' "$rule_name" >> "$new_manifest"
+            cp "$rule_file" "${HOME}/.cursor/rules/$rule_name"
+            CURSOR_RULES_SYNCED=$((CURSOR_RULES_SYNCED + 1))
+        done < "$rule_list"
+
+        rm -f "$rule_list"
+
+        if [[ -f "$CURSOR_RULES_MANIFEST" ]]; then
+            while IFS= read -r rule_name; do
+                [[ -n "$rule_name" ]] || continue
+                if ! grep -Fxq "$rule_name" "$new_manifest"; then
+                    rm -f "${HOME}/.cursor/rules/$rule_name"
+                fi
+            done < "$CURSOR_RULES_MANIFEST"
+        fi
+
+        mv "$new_manifest" "$CURSOR_RULES_MANIFEST"
+    fi
+
+    # skills（目录） → ~/.cursor/skills/
+    new_manifest="$(mktemp)"
+
+    if [[ -d "$CURSOR_SKILLS_SRC" ]]; then
+        skill_list="$(mktemp)"
+        find "$CURSOR_SKILLS_SRC" -mindepth 1 -maxdepth 1 -type d | LC_ALL=C sort > "$skill_list"
+
+        while IFS= read -r skill_dir; do
+            [[ -n "$skill_dir" ]] || continue
+            skill_name="$(basename "$skill_dir")"
+            printf '%s\n' "$skill_name" >> "$new_manifest"
+            rm -rf "${HOME}/.cursor/skills/$skill_name"
+            cp -R "$skill_dir" "${HOME}/.cursor/skills/$skill_name"
+            CURSOR_SKILLS_SYNCED=$((CURSOR_SKILLS_SYNCED + 1))
+        done < "$skill_list"
+
+        rm -f "$skill_list"
+    fi
+
+    # commands（.md 文件） → ~/.cursor/skills/{name}/SKILL.md
+    if [[ -d "$CURSOR_COMMANDS_SRC" ]]; then
+        cmd_list="$(mktemp)"
+        find "$CURSOR_COMMANDS_SRC" -maxdepth 1 -type f -name '*.md' | LC_ALL=C sort > "$cmd_list"
+
+        while IFS= read -r cmd_file; do
+            [[ -n "$cmd_file" ]] || continue
+            cmd_name="$(basename "$cmd_file" .md)"
+            printf '%s\n' "$cmd_name" >> "$new_manifest"
+            mkdir -p "${HOME}/.cursor/skills/$cmd_name"
+            cp "$cmd_file" "${HOME}/.cursor/skills/$cmd_name/SKILL.md"
+            CURSOR_COMMANDS_SYNCED=$((CURSOR_COMMANDS_SYNCED + 1))
+        done < "$cmd_list"
+
+        rm -f "$cmd_list"
+    fi
+
+    if [[ -f "$CURSOR_SKILLS_MANIFEST" ]]; then
+        while IFS= read -r item_name; do
+            [[ -n "$item_name" ]] || continue
+            if ! grep -Fxq "$item_name" "$new_manifest"; then
+                rm -rf "${HOME}/.cursor/skills/$item_name"
+            fi
+        done < "$CURSOR_SKILLS_MANIFEST"
+    fi
+
+    mv "$new_manifest" "$CURSOR_SKILLS_MANIFEST"
+
+    # templates → ~/.cursor/templates/
+    if [[ -d "$CURSOR_TEMPLATES_SRC" ]]; then
+        find "$CURSOR_TEMPLATES_SRC" -mindepth 1 -maxdepth 1 -type d | LC_ALL=C sort | while IFS= read -r tpl_dir; do
+            [[ -n "$tpl_dir" ]] || continue
+            tpl_name="$(basename "$tpl_dir")"
+            mkdir -p "${HOME}/.cursor/templates/$tpl_name"
+            cp -R "$tpl_dir"/* "${HOME}/.cursor/templates/$tpl_name/" 2>/dev/null || true
+        done
+    fi
+
+    print_line "${GREEN}  ✓ rules: ${CURSOR_RULES_SYNCED} 个，同步到 ~/.cursor/rules/${NC}"
+    print_line "${GREEN}  ✓ skills: ${CURSOR_SKILLS_SYNCED} 个，同步到 ~/.cursor/skills/${NC}"
+    print_line "${GREEN}  ✓ commands: ${CURSOR_COMMANDS_SYNCED} 个，同步到 ~/.cursor/skills/（命令式技能）${NC}"
+    print_line "${GREEN}  ✓ templates: 同步到 ~/.cursor/templates/${NC}"
+    print_line "${YELLOW}  已保留 ~/.cursor 运行态文件（settings/extensions/cache）${NC}"
+else
+    print_line "${YELLOW}[Cursor] 源目录不存在，跳过${NC}"
 fi
 
 printf '\n'

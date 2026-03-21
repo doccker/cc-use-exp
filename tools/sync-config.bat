@@ -1,7 +1,7 @@
 @echo off
 setlocal enabledelayedexpansion
 
-REM 同步 .claude、.gemini 和 .codex 配置到用户根目录
+REM 同步 .claude、.gemini、.codex 和 .cursor 配置到用户根目录
 
 set "HOME_DIR=%USERPROFILE%"
 set "CODEX_MANAGED_START=<!-- cc-use-exp codex managed:start -->"
@@ -258,6 +258,84 @@ if exist "%SCRIPT_DIR%\.codex" (
     echo   已保留 ~/.codex 运行态文件（auth/history/logs/cache）
 ) else (
     echo [Codex] 源目录不存在，跳过
+)
+
+echo.
+REM --- Cursor ---
+if exist "%SCRIPT_DIR%\.cursor" (
+    echo [Cursor] 开始同步
+
+    if not exist "%HOME_DIR%\.cursor" mkdir "%HOME_DIR%\.cursor"
+    if not exist "%HOME_DIR%\.cursor\rules" mkdir "%HOME_DIR%\.cursor\rules"
+    if not exist "%HOME_DIR%\.cursor\skills" mkdir "%HOME_DIR%\.cursor\skills"
+    if not exist "%HOME_DIR%\.cursor\templates" mkdir "%HOME_DIR%\.cursor\templates"
+
+    set "CURSOR_RULES_SRC=%SCRIPT_DIR%\.cursor\rules"
+    set "CURSOR_SKILLS_SRC=%SCRIPT_DIR%\.cursor\skills"
+    set "CURSOR_COMMANDS_SRC=%SCRIPT_DIR%\.cursor\commands"
+    set "CURSOR_TEMPLATES_SRC=%SCRIPT_DIR%\.cursor\templates"
+    set "CURSOR_RULES_MANIFEST=%HOME_DIR%\.cursor\rules\.cc-use-exp-managed"
+    set "CURSOR_SKILLS_MANIFEST=%HOME_DIR%\.cursor\skills\.cc-use-exp-managed"
+    set "CURSOR_RULES_SYNCED=0"
+    set "CURSOR_SKILLS_SYNCED=0"
+    set "CURSOR_COMMANDS_SYNCED=0"
+
+    REM rules
+    if exist "!CURSOR_RULES_MANIFEST!" (
+        for /f "usebackq delims=" %%f in ("!CURSOR_RULES_MANIFEST!") do (
+            if exist "%HOME_DIR%\.cursor\rules\%%f" del /f /q "%HOME_DIR%\.cursor\rules\%%f"
+        )
+        del /f /q "!CURSOR_RULES_MANIFEST!" >nul 2>nul
+    )
+    if exist "!CURSOR_RULES_SRC!" (
+        for /f "delims=" %%f in ('dir /b /a-d "!CURSOR_RULES_SRC!\*.mdc" "!CURSOR_RULES_SRC!\*.md" 2^>nul') do (
+            copy /y "!CURSOR_RULES_SRC!\%%f" "%HOME_DIR%\.cursor\rules\%%f" >nul
+            >> "!CURSOR_RULES_MANIFEST!" echo %%f
+            set /a CURSOR_RULES_SYNCED+=1
+        )
+    )
+
+    REM skills（目录） → ~/.cursor/skills/
+    if exist "!CURSOR_SKILLS_MANIFEST!" (
+        for /f "usebackq delims=" %%d in ("!CURSOR_SKILLS_MANIFEST!") do (
+            if exist "%HOME_DIR%\.cursor\skills\%%d" rmdir /s /q "%HOME_DIR%\.cursor\skills\%%d"
+        )
+        del /f /q "!CURSOR_SKILLS_MANIFEST!" >nul 2>nul
+    )
+    if exist "!CURSOR_SKILLS_SRC!" (
+        for /f "delims=" %%d in ('dir /b /ad "!CURSOR_SKILLS_SRC!" 2^>nul') do (
+            xcopy /y /e /i /q "!CURSOR_SKILLS_SRC!\%%d" "%HOME_DIR%\.cursor\skills\%%d" >nul
+            >> "!CURSOR_SKILLS_MANIFEST!" echo %%d
+            set /a CURSOR_SKILLS_SYNCED+=1
+        )
+    )
+
+    REM commands（.md 文件） → ~/.cursor/skills/{name}/SKILL.md
+    if exist "!CURSOR_COMMANDS_SRC!" (
+        for /f "delims=" %%f in ('dir /b /a-d "!CURSOR_COMMANDS_SRC!\*.md" 2^>nul') do (
+            set "CMD_NAME=%%~nf"
+            if not exist "%HOME_DIR%\.cursor\skills\!CMD_NAME!" mkdir "%HOME_DIR%\.cursor\skills\!CMD_NAME!"
+            copy /y "!CURSOR_COMMANDS_SRC!\%%f" "%HOME_DIR%\.cursor\skills\!CMD_NAME!\SKILL.md" >nul
+            >> "!CURSOR_SKILLS_MANIFEST!" echo !CMD_NAME!
+            set /a CURSOR_COMMANDS_SYNCED+=1
+        )
+    )
+
+    REM templates
+    if exist "!CURSOR_TEMPLATES_SRC!" (
+        for /f "delims=" %%d in ('dir /b /ad "!CURSOR_TEMPLATES_SRC!" 2^>nul') do (
+            if not exist "%HOME_DIR%\.cursor\templates\%%d" mkdir "%HOME_DIR%\.cursor\templates\%%d"
+            xcopy /y /e /i /q "!CURSOR_TEMPLATES_SRC!\%%d" "%HOME_DIR%\.cursor\templates\%%d" >nul
+        )
+    )
+
+    echo   [√] rules: !CURSOR_RULES_SYNCED! 个，同步到 ~/.cursor/rules/
+    echo   [√] skills: !CURSOR_SKILLS_SYNCED! 个，同步到 ~/.cursor/skills/
+    echo   [√] commands: !CURSOR_COMMANDS_SYNCED! 个，同步到 ~/.cursor/skills/
+    echo   [√] templates: 同步到 ~/.cursor/templates/
+    echo   已保留 ~/.cursor 运行态文件（settings/extensions/cache）
+) else (
+    echo [Cursor] 源目录不存在，跳过
 )
 
 echo.

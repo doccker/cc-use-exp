@@ -21,3 +21,6 @@ publish.sh
 
 # Gemini CLI local environment configuration
 .gemini/.env
+
+# Cursor runtime files
+.cursor/mcp.json
