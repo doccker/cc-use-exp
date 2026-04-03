@@ -1,5 +1,7 @@
 # /cache-patch - Claude Code 1h 缓存补丁
 
+> **参数说明**：`$ARGUMENTS` 由 Claude Code 自动传递，对应用户输入的参数部分（如 `/cache-patch status` 中的 `status`）。
+
 **立即执行以下命令，不做任何检测、搜索或判断：**
 
 ```bash

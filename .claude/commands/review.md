@@ -1,16 +1,76 @@
 ---
-description: 代码审查（full/quick/security 三种模式）
-allowed-tools: Bash(git diff:*), Bash(git status:*), Bash(git log:*), Bash(git show:*), Read, Glob, Grep
-argument-hint: "[quick|security] 默认 full 全量审查"
+description: 代码审查（full/quick/security 三种模式），支持指定提交
+allowed-tools: Bash(git diff:*), Bash(git status:*), Bash(git log:*), Bash(git show:*), Bash(git rev-parse:*), Read, Glob, Grep
+argument-hint: "[quick|security] [commit-hash] 默认 full 全量审查当前分支"
 ---
 
-根据参数选择审查模式：
+根据参数选择审查模式和审查目标：
 
+**审查当前分支**：
 - `/review` 或 `/review full` → 全量代码审查
 - `/review quick` → 快速审查（一键 diff + 结论）
 - `/review security` → 安全专项审查
 
+**审查指定提交**：
+- `/review <commit-hash>` → 审查单个提交（full 模式）
+- `/review quick <commit-hash>` → 快速审查单个提交
+- `/review security <commit-hash>` → 安全审查单个提交
+- `/review <commit-hash> quick` → 参数顺序灵活
+
 参数值：「$ARGUMENTS」
+
+---
+
+## 参数解析
+
+首先解析参数，确定审查模式和目标：
+
+```bash
+# 解析参数
+ARGS="$ARGUMENTS"
+MODE="full"
+TARGET=""
+
+# 提取模式和目标
+for arg in $ARGS; do
+  case "$arg" in
+    quick|security|full)
+      MODE="$arg"
+      ;;
+    *)
+      TARGET="$arg"
+      ;;
+  esac
+done
+
+# 如果指定了 commit，验证其有效性
+if [ -n "$TARGET" ]; then
+  if ! git rev-parse --verify "$TARGET^{commit}" >/dev/null 2>&1; then
+    echo "❌ 错误：无效的 commit hash: $TARGET"
+    echo ""
+    echo "请检查："
+    echo "1. commit hash 是否正确（可以是完整 hash 或短 hash）"
+    echo "2. commit 是否存在于当前仓库"
+    echo ""
+    echo "提示：使用 'git log' 查看可用的 commit"
+    exit 1
+  fi
+
+  # 获取完整 hash 和提交信息
+  FULL_HASH=$(git rev-parse "$TARGET")
+  COMMIT_MSG=$(git log -1 --pretty=format:"%s" "$TARGET")
+
+  echo "### 审查范围"
+  echo ""
+  echo "**提交**: \`$FULL_HASH\`"
+  echo "**信息**: $COMMIT_MSG"
+  echo "**作者**: $(git log -1 --pretty=format:"%an <%ae>" "$TARGET")"
+  echo "**时间**: $(git log -1 --pretty=format:"%ai" "$TARGET")"
+  echo ""
+fi
+```
+
+根据解析结果，执行对应模式的审查。
 
 ---
 
@@ -22,28 +82,34 @@ argument-hint: "[quick|security] 默认 full 全量审查"
 
 ### 变更信息
 
-**Git 状态**：
+根据是否指定了 commit，使用不同的 Git 命令获取变更信息：
 
-```
-!`git status`
-```
+**如果指定了 commit（TARGET 非空）**：
 
-**变更文件**：
+```bash
+# Git 状态（仅当前分支需要）
+if [ -z "$TARGET" ]; then
+  echo "!`git status`"
+fi
 
-```
-!`git diff --name-only origin/HEAD...`
-```
+# 变更文件
+if [ -z "$TARGET" ]; then
+  echo "!`git diff --name-only origin/HEAD...`"
+fi
 
-**提交记录**：
+# 提交记录
+if [ -n "$TARGET" ]; then
+  echo "!`git show --no-patch $TARGET`"
+else
+  echo "!`git log --no-decorate origin/HEAD...`"
+fi
 
-```
-!`git log --no-decorate origin/HEAD...`
-```
-
-**变更内容**：
-
-```
-!`git diff --merge-base origin/HEAD`
+# 变更内容
+if [ -n "$TARGET" ]; then
+  echo "!`git show $TARGET`"
+else
+  echo "!`git diff --merge-base origin/HEAD`"
+fi
 ```
 
 ### 审查框架
@@ -156,12 +222,31 @@ argument-hint: "[quick|security] 默认 full 全量审查"
 
 ## 模式 2：quick
 
-快速审查当前改动，直接输出问题和建议。
+快速审查改动，直接输出问题和建议。
 
 ### 执行
 
-1. 获取改动：`!`git diff --stat`` + `!`git diff``
-2. 直接输出审查结果，不需要用户确认
+根据是否指定了 commit，使用不同的命令获取改动：
+
+**如果指定了 commit（TARGET 非空）**：
+```bash
+# 获取提交统计
+git show --stat $TARGET
+
+# 获取提交变更
+git show $TARGET
+```
+
+**如果审查当前分支**：
+```bash
+# 获取改动统计
+git diff --stat
+
+# 获取改动内容
+git diff
+```
+
+直接输出审查结果，不需要用户确认。
 
 ### 输出格式
 
@@ -187,9 +272,27 @@ argument-hint: "[quick|security] 默认 full 全量审查"
 
 ## 模式 3：security
 
-对当前分支的代码变更进行安全审查。
+对代码变更进行安全审查。
 
 ### 上下文信息
+
+根据是否指定了 commit，使用不同的命令获取上下文：
+
+**如果指定了 commit（TARGET 非空）**：
+
+GIT STATUS: （跳过，单个 commit 不需要）
+
+COMMIT INFO:
+```
+!`git show --no-patch $TARGET`
+```
+
+DIFF CONTENT:
+```
+!`git show $TARGET`
+```
+
+**如果审查当前分支**：
 
 GIT STATUS:
 ```

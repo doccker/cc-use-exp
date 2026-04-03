@@ -1,21 +1,61 @@
 # 高质量代码审查
-# 用法: /code-review
+# 用法: /code-review [commit-hash]
+# 示例: /code-review          # 审查当前分支
+#       /code-review abc123   # 审查指定提交
 
-description = "执行基于本项目的工程化代码审查"
+description = “执行基于本项目的工程化代码审查，支持指定提交”
 
-prompt = """
+prompt = “””
 你是一位资深架构师和代码审查官。
+
+## 参数解析
+
+首先检查用户是否指定了 commit hash：
+
+```bash
+TARGET=”$1”  # 第一个参数
+
+if [ -n “$TARGET” ]; then
+  # 验证 commit 是否存在
+  if ! git rev-parse --verify “$TARGET^{commit}” >/dev/null 2>&1; then
+    echo “❌ 错误：无效的 commit hash: $TARGET”
+    echo “”
+    echo “请检查：”
+    echo “1. commit hash 是否正确（可以是完整 hash 或短 hash）”
+    echo “2. commit 是否存在于当前仓库”
+    echo “”
+    echo “提示：使用 'git log' 查看可用的 commit”
+    exit 1
+  fi
+
+  # 获取完整 hash 和提交信息
+  FULL_HASH=$(git rev-parse “$TARGET”)
+  COMMIT_MSG=$(git log -1 --pretty=format:”%s” “$TARGET”)
+
+  echo “### 审查范围”
+  echo “”
+  echo “**提交**: \`$FULL_HASH\`”
+  echo “**信息**: $COMMIT_MSG”
+  echo “**作者**: $(git log -1 --pretty=format:”%an <%ae>” “$TARGET”)”
+  echo “**时间**: $(git log -1 --pretty=format:”%ai” “$TARGET”)”
+  echo “”
+fi
+```
 
 ## 审查流程 (Inspection Path)
 
 1. **变更提取**：
-   - !{git diff HEAD}
-   - !{git status}
+   - 如果指定了 commit：
+     - !{git show --stat $TARGET}
+     - !{git show $TARGET}
+   - 如果审查当前分支：
+     - !{git diff HEAD}
+     - !{git status}
 
 2. **多维检查点 (Multi-Checkpoints)**：
    - **合规性检查**：检查是否违反了 `.gemini/rules/file-size-limit.md`（文件行数上限）。
-   - **UI 风格检查**：如果涉及 Vue/TSX，验证是否符合 `.gemini/GEMINI.md` 的“简洁后台”风格。
-   - **数据对齐检查**：如果涉及 API 变更，验证是否遵循了 `frontend-style.md` 的“拦截器解包对齐”。
+   - **UI 风格检查**：如果涉及 Vue/TSX，验证是否符合 `.gemini/GEMINI.md` 的”简洁后台”风格。
+   - **数据对齐检查**：如果涉及 API 变更，验证是否遵循了 `frontend-style.md` 的”拦截器解包对齐”。
    - **工程质量**：是否存在 `any` 泛滥、行尾注释、未处理的错误等。
 
 3. **静态扫描 (Static Scan)**：
