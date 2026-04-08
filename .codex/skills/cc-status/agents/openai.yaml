@@ -1,5 +1,5 @@
 interface:
   display_name: "CC Status"
-  short_description: "显式检查 Codex 全局配置、skills、profiles 和同步缺口。"
+  short_description: "显式检查 Codex 全局配置、rules、instructions、skills、profiles 和同步缺口。"
 policy:
   allow_implicit_invocation: false

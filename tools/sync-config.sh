@@ -67,7 +67,7 @@ build_profiles_bundle() {
     find "$src_dir" -maxdepth 1 -type f -name '*.toml' | LC_ALL=C sort > "$profile_list"
 
     printf '# Managed Codex profiles from cc-use-exp\n' >> "$CODEX_PROFILE_BUNDLE"
-    printf '# Use with: codex -p cc-fast-api | cc-balanced | cc-deep\n\n' >> "$CODEX_PROFILE_BUNDLE"
+    printf '# Use with: codex -p <profile-name>\n\n' >> "$CODEX_PROFILE_BUNDLE"
 
     while IFS= read -r profile_file; do
         [[ -n "$profile_file" ]] || continue
@@ -113,6 +113,44 @@ sync_managed_rules() {
             [[ -n "$rule_name" ]] || continue
             if ! grep -Fxq "$rule_name" "$new_manifest"; then
                 rm -f "$dst_dir/$rule_name"
+            fi
+        done < "$manifest_file"
+    fi
+
+    mv "$new_manifest" "$manifest_file"
+}
+
+sync_managed_instruction_files() {
+    local src_dir="$1"
+    local dst_dir="$2"
+    local manifest_file="$dst_dir/.cc-use-exp-managed"
+    local new_manifest
+    local instruction_file
+    local instruction_name
+    local instruction_list
+
+    CODEX_INSTRUCTIONS_SYNCED=0
+    mkdir -p "$dst_dir"
+    new_manifest="$(mktemp)"
+    instruction_list="$(mktemp)"
+
+    find "$src_dir" -maxdepth 1 -type f -name '*.md' | LC_ALL=C sort > "$instruction_list"
+
+    while IFS= read -r instruction_file; do
+        [[ -n "$instruction_file" ]] || continue
+        instruction_name="$(basename "$instruction_file")"
+        printf '%s\n' "$instruction_name" >> "$new_manifest"
+        cp "$instruction_file" "$dst_dir/$instruction_name"
+        CODEX_INSTRUCTIONS_SYNCED=$((CODEX_INSTRUCTIONS_SYNCED + 1))
+    done < "$instruction_list"
+
+    rm -f "$instruction_list"
+
+    if [[ -f "$manifest_file" ]]; then
+        while IFS= read -r instruction_name; do
+            [[ -n "$instruction_name" ]] || continue
+            if ! grep -Fxq "$instruction_name" "$new_manifest"; then
+                rm -f "$dst_dir/$instruction_name"
             fi
         done < "$manifest_file"
     fi
@@ -373,14 +411,16 @@ printf '\n'
 if [[ -d "${SCRIPT_DIR}/.codex" ]]; then
     print_line "${GREEN}[Codex] 开始同步${NC}"
 
-    mkdir -p ~/.codex ~/.codex/rules ~/.agents/skills
+    mkdir -p ~/.codex ~/.codex/rules ~/.codex/instructions ~/.agents/skills
 
     CODEX_RULES_SYNCED=0
+    CODEX_INSTRUCTIONS_SYNCED=0
     CODEX_SKILLS_SYNCED=0
 
     CODEX_AGENTS_SRC="${SCRIPT_DIR}/.codex/global/AGENTS.md"
     CODEX_AGENTS_DST="${HOME}/.codex/AGENTS.md"
     CODEX_RULES_SRC="${SCRIPT_DIR}/.codex/global/rules"
+    CODEX_INSTRUCTIONS_SRC="${SCRIPT_DIR}/.codex/instructions"
     CODEX_SKILLS_SRC="${SCRIPT_DIR}/.codex/skills"
 
     if [[ -f "$CODEX_AGENTS_SRC" ]]; then
@@ -392,6 +432,10 @@ if [[ -d "${SCRIPT_DIR}/.codex" ]]; then
 
     if [[ -d "$CODEX_RULES_SRC" ]]; then
         sync_managed_rules "$CODEX_RULES_SRC" "${HOME}/.codex/rules"
+    fi
+
+    if [[ -d "$CODEX_INSTRUCTIONS_SRC" ]]; then
+        sync_managed_instruction_files "$CODEX_INSTRUCTIONS_SRC" "${HOME}/.codex/instructions"
     fi
 
     if [[ -d "$CODEX_SKILLS_SRC" ]]; then
@@ -412,6 +456,7 @@ if [[ -d "${SCRIPT_DIR}/.codex" ]]; then
     fi
 
     print_line "${GREEN}  ✓ rules: ${CODEX_RULES_SYNCED} 个，同步到 ~/.codex/rules/${NC}"
+    print_line "${GREEN}  ✓ instructions: ${CODEX_INSTRUCTIONS_SYNCED} 个，同步到 ~/.codex/instructions/${NC}"
     print_line "${GREEN}  ✓ skills: ${CODEX_SKILLS_SYNCED} 个，同步到 ~/.agents/skills/${NC}"
     print_line "${YELLOW}  已保留 ~/.codex 运行态文件（auth/history/logs/cache）${NC}"
 else

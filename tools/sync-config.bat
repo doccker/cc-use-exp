@@ -190,18 +190,22 @@ if exist "%SCRIPT_DIR%\.codex" (
 
     if not exist "%HOME_DIR%\.codex" mkdir "%HOME_DIR%\.codex"
     if not exist "%HOME_DIR%\.codex\rules" mkdir "%HOME_DIR%\.codex\rules"
+    if not exist "%HOME_DIR%\.codex\instructions" mkdir "%HOME_DIR%\.codex\instructions"
     if not exist "%HOME_DIR%\.agents" mkdir "%HOME_DIR%\.agents"
     if not exist "%HOME_DIR%\.agents\skills" mkdir "%HOME_DIR%\.agents\skills"
 
     set "CODEX_RULES_SYNCED=0"
+    set "CODEX_INSTRUCTIONS_SYNCED=0"
     set "CODEX_SKILLS_SYNCED=0"
     set "CODEX_AGENTS_SRC=%SCRIPT_DIR%\.codex\global\AGENTS.md"
     set "CODEX_AGENTS_DST=%HOME_DIR%\.codex\AGENTS.md"
     set "CODEX_RULES_SRC=%SCRIPT_DIR%\.codex\global\rules"
+    set "CODEX_INSTRUCTIONS_SRC=%SCRIPT_DIR%\.codex\instructions"
     set "CODEX_SKILLS_SRC=%SCRIPT_DIR%\.codex\skills"
     set "CODEX_PROFILES_SRC=%SCRIPT_DIR%\.codex\profiles"
     set "CODEX_CONFIG_DST=%HOME_DIR%\.codex\config.toml"
     set "RULES_MANIFEST=%HOME_DIR%\.codex\rules\.cc-use-exp-managed"
+    set "INSTRUCTIONS_MANIFEST=%HOME_DIR%\.codex\instructions\.cc-use-exp-managed"
     set "SKILLS_MANIFEST=%HOME_DIR%\.agents\skills\.cc-use-exp-managed"
 
     if exist "!CODEX_AGENTS_SRC!" (
@@ -229,6 +233,20 @@ if exist "%SCRIPT_DIR%\.codex" (
         )
     )
 
+    if exist "!INSTRUCTIONS_MANIFEST!" (
+        for /f "usebackq delims=" %%f in ("!INSTRUCTIONS_MANIFEST!") do (
+            if exist "%HOME_DIR%\.codex\instructions\%%f" del /f /q "%HOME_DIR%\.codex\instructions\%%f"
+        )
+        del /f /q "!INSTRUCTIONS_MANIFEST!" >nul 2>nul
+    )
+    if exist "!CODEX_INSTRUCTIONS_SRC!" (
+        for /f "delims=" %%f in ('dir /b /a-d "!CODEX_INSTRUCTIONS_SRC!\*.md" 2^>nul') do (
+            copy /y "!CODEX_INSTRUCTIONS_SRC!\%%f" "%HOME_DIR%\.codex\instructions\%%f" >nul
+            >> "!INSTRUCTIONS_MANIFEST!" echo %%f
+            set /a CODEX_INSTRUCTIONS_SYNCED+=1
+        )
+    )
+
     if exist "!SKILLS_MANIFEST!" (
         for /f "usebackq delims=" %%d in ("!SKILLS_MANIFEST!") do (
             if exist "%HOME_DIR%\.agents\skills\%%d" rmdir /s /q "%HOME_DIR%\.agents\skills\%%d"
@@ -246,7 +264,7 @@ if exist "%SCRIPT_DIR%\.codex" (
     set "CODEX_PROFILES_SYNCED=0"
     if exist "!CODEX_PROFILES_SRC!" (
         for /f %%n in ('dir /b /a-d "!CODEX_PROFILES_SRC!\*.toml" 2^>nul ^| find /c /v ""') do set "CODEX_PROFILES_SYNCED=%%n"
-        powershell -NoProfile -Command "$start=$env:CODEX_PROFILE_START; $end=$env:CODEX_PROFILE_END; $srcDir=$env:CODEX_PROFILES_SRC; $dstPath=$env:CODEX_CONFIG_DST; $existing=if(Test-Path $dstPath){[IO.File]::ReadAllText($dstPath)} else {''}; $pattern='(?s)\r?\n?'+[regex]::Escape($start)+'.*?'+[regex]::Escape($end)+'\r?\n?'; $clean=[regex]::Replace($existing,$pattern,''); $parts=Get-ChildItem -Path $srcDir -Filter '*.toml' ^| Sort-Object Name ^| ForEach-Object { [IO.File]::ReadAllText($_.FullName).TrimEnd() }; $body='# Managed Codex profiles from cc-use-exp'+[Environment]::NewLine+'# Use with: codex -p cc-fast-api ^| cc-balanced ^| cc-deep'+[Environment]::NewLine+[Environment]::NewLine+($parts -join ([Environment]::NewLine+[Environment]::NewLine)); $clean=$clean.TrimEnd(); if($clean.Length -gt 0){$clean += [Environment]::NewLine + [Environment]::NewLine}; $content=$clean + $start + [Environment]::NewLine + $body.TrimEnd() + [Environment]::NewLine + $end + [Environment]::NewLine; [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($dstPath)) ^| Out-Null; [IO.File]::WriteAllText($dstPath,$content,[Text.UTF8Encoding]::new($false))" >nul
+        powershell -NoProfile -Command "$start=$env:CODEX_PROFILE_START; $end=$env:CODEX_PROFILE_END; $srcDir=$env:CODEX_PROFILES_SRC; $dstPath=$env:CODEX_CONFIG_DST; $existing=if(Test-Path $dstPath){[IO.File]::ReadAllText($dstPath)} else {''}; $pattern='(?s)\r?\n?'+[regex]::Escape($start)+'.*?'+[regex]::Escape($end)+'\r?\n?'; $clean=[regex]::Replace($existing,$pattern,''); $parts=Get-ChildItem -Path $srcDir -Filter '*.toml' ^| Sort-Object Name ^| ForEach-Object { [IO.File]::ReadAllText($_.FullName).TrimEnd() }; $body='# Managed Codex profiles from cc-use-exp'+[Environment]::NewLine+'# Use with: codex -p ^<profile-name^>'+[Environment]::NewLine+[Environment]::NewLine+($parts -join ([Environment]::NewLine+[Environment]::NewLine)); $clean=$clean.TrimEnd(); if($clean.Length -gt 0){$clean += [Environment]::NewLine + [Environment]::NewLine}; $content=$clean + $start + [Environment]::NewLine + $body.TrimEnd() + [Environment]::NewLine + $end + [Environment]::NewLine; [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($dstPath)) ^| Out-Null; [IO.File]::WriteAllText($dstPath,$content,[Text.UTF8Encoding]::new($false))" >nul
         if errorlevel 1 (
             echo   警告: profiles 同步失败，请检查 powershell 是否可用
         ) else (
@@ -257,6 +275,7 @@ if exist "%SCRIPT_DIR%\.codex" (
     )
 
     echo   [√] rules: !CODEX_RULES_SYNCED! 个，同步到 ~/.codex/rules/
+    echo   [√] instructions: !CODEX_INSTRUCTIONS_SYNCED! 个，同步到 ~/.codex/instructions/
     echo   [√] skills: !CODEX_SKILLS_SYNCED! 个，同步到 ~/.agents/skills/
     echo   已保留 ~/.codex 运行态文件（auth/history/logs/cache）
 ) else (

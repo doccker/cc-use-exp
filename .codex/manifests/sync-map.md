@@ -6,6 +6,7 @@
 |------|------|------|
 | `.codex/global/AGENTS.md` | `~/.codex/AGENTS.md` | 受管区块合并，不整文件覆盖 |
 | `.codex/global/rules/*.rules` | `~/.codex/rules/` | 增量复制，文件名保留 `cc-` 前缀 |
+| `.codex/instructions/*.md` | `~/.codex/instructions/` | 增量复制，清理当前项目受管文件 |
 | `.codex/skills/*` | `~/.agents/skills/` | 增量复制，保留目录名 |
 | `.codex/profiles/*.toml` | `~/.codex/config.toml` | 受管区块合并，只追加具名 profiles |
 

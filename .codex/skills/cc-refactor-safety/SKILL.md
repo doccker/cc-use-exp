@@ -231,6 +231,30 @@ const columns = ['订单编号', '订单日期', '材料名称', '材料数量',
 
 **场景**：从大服务/组件拆分子模块时，子模块需要回调父模块的方法
 
+#### ⚠️ 预检流程（拆分前必须执行）
+
+**先提取共享方法，再拆分子服务**：
+```
+拆分前：
+1. 扫描父服务，识别被多个子服务调用的工具方法
+2. 将这些方法提取到独立 Helper/Utils 类
+3. 然后再拆分子服务（此时子服务依赖 Helper，不依赖父服务）
+
+❌ 错误顺序：拆分子服务 → 发现循环依赖 → 修复
+✅ 正确顺序：提取共享方法 → 拆分子服务 → 无循环依赖
+```
+
+#### ⚠️ 重复模式警告
+
+**如果第一个子服务提取时已出现循环依赖，后续所有子服务提取必须先检查相同问题**：
+```
+真实案例：
+- ReportService → 提取 ReportInvoiceService → 循环依赖（resolveTenantIds）
+- ReportService → 提取 ReportPaymentService → 同样的循环依赖！
+根因：resolveTenantIds() 留在 ReportService，所有子服务都需要它
+修复：应在第一次发现时就提取 TenantHelper，避免后续重复犯错
+```
+
 **错误示例**：
 ```java
 // ❌ ReportService 拆分出 ReportInvoiceService
@@ -262,8 +286,9 @@ public void process(Function<Long, List<Long>> tenantResolver) { ... }
 ```
 
 **检查清单**：
+- [ ] **预检**：父服务中是否有被多个子服务调用的工具方法？是 → 先提取到独立类
+- [ ] **重复检查**：本次拆分是否与之前的拆分有相同的回调依赖？
 - [ ] 画依赖图：拆分后是否存在 A → B → A 的循环？
-- [ ] 子模块回调父模块的方法是否为纯工具方法？是 → 提取到独立类
 - [ ] 依赖方向是否单向：父 → 子（禁止子 → 父）
 - [ ] Spring Boot 3.x 默认禁止构造器循环依赖
 
@@ -271,6 +296,148 @@ public void process(Function<Long, List<Long>> tenantResolver) { ... }
 - Go：包级循环引用（编译错误）→ 提取公共包
 - Vue：组件循环引用 → 异步组件或提取公共逻辑到 composables
 - TypeScript：模块循环引用 → 提取公共模块
+
+---
+
+### 6. 提取状态管理时的初始化冲突
+
+**场景**：将组件内的 state 提取到自定义 Hook/composable/Service 时，封装的 open 方法添加了初始化逻辑，覆盖了调用方预设的状态
+
+**真实案例**：
+```tsx
+// 重构前：调用方直接控制状态，时序正确
+setMarkPaidText(selectedOrderNumbers)  // 1. 设置订单号
+setMarkPaidModalVisible(true)          // 2. 打开弹窗 ✅
+
+// 重构后：提取到 useOrderModals hook
+const openMarkPaidModal = () => {
+  setMarkPaidText('')           // ❌ 清空了调用方刚设置的值！
+  setMarkPaidModalVisible(true)
+}
+
+// 调用方：
+setMarkPaidText(selectedOrderNumbers)  // 1. 设置订单号
+openMarkPaidModal()                    // 2. 内部又清空了 → 弹窗空白
+```
+
+**正确做法**：
+```tsx
+// ✅ 方案1：open 方法接受参数
+const openMarkPaidModal = (initialText?: string) => {
+  if (initialText !== undefined) setMarkPaidText(initialText)
+  setMarkPaidModalVisible(true)
+}
+
+// ✅ 方案2：初始化放在 close 而非 open
+const closeMarkPaidModal = () => {
+  setMarkPaidText('')  // 关闭时清空是安全的
+  setMarkPaidModalVisible(false)
+}
+```
+
+**检查清单**：
+- [ ] 提取 open/show 方法时，检查调用方是否在 open 之前设置了状态
+- [ ] open 方法中的初始化逻辑是否会覆盖调用方预设的值
+- [ ] 初始化/清空逻辑应放在 close 而非 open
+- [ ] 如果 open 需要初始化，应通过参数传入而非内部硬编码
+
+**适用范围**：
+- React：useState → useXxxModal hook
+- Vue：ref → useXxxDialog composable
+- Java：Service 方法添加默认值逻辑
+
+---
+
+### 7. UI 组件重构时的布局结构丢失
+
+**场景**：重构 Modal/Dialog/Drawer 等容器组件时，将复杂的 title/header/footer 简化，导致按钮布局和功能丢失
+
+**真实案例**：
+```tsx
+// 重构前：title 包含条件渲染的按钮
+<Modal
+  title={
+    <div className="flex justify-between">
+      <span>发票详情</span>
+      {!editMode && <Button icon={<EditOutlined />}>编辑发票</Button>}
+      {editMode && (
+        <Space>
+          <Button icon={<CloseOutlined />}>取消</Button>
+          <Button type="primary" icon={<SaveOutlined />}>保存</Button>
+        </Space>
+      )}
+    </div>
+  }
+  footer={[
+    <Button key="download" type="primary" icon={<DownloadOutlined />}>
+      下载原始PDF
+    </Button>,
+    <Button key="close">关闭</Button>,
+  ]}
+/>
+
+// ❌ 重构后：title 简化为纯文本，footer 按钮被替换
+<Modal
+  title={`发票详情 - ${invoice?.invoiceNumber}`}  // 丢失编辑/取消/保存按钮
+  footer={[
+    <button key="edit">编辑</button>,   // 降级为原生 button + 丢失"下载PDF"
+    <button key="close">关闭</button>,
+  ]}
+/>
+```
+
+**检查清单**：
+- [ ] title/header/footer 的 JSX 结构是否与原始代码一致
+- [ ] 条件渲染的按钮（`{condition && <Button>}`）是否都保留
+- [ ] 按钮数量是否一致（重构前 N 个 → 重构后 N 个）
+- [ ] 组件库组件是否保持（Ant Design `<Button>` 不能降级为 `<button>`）
+- [ ] 功能按钮是否遗漏（如"下载"、"导出"等）
+
+**适用范围**：
+- React：Modal、Dialog、Drawer 的 title/footer
+- Vue：el-dialog、el-drawer 的 header/footer 插槽
+- 任何包含条件渲染按钮的 UI 容器组件
+
+---
+
+### 8. 复杂渲染逻辑被简化替换
+
+**场景**：重构表格列或组件时，将复杂的 render 函数（JSON 解析、条件格式化、diff 对比）替换为简单文本显示，导致功能降级
+
+**真实案例**：
+```tsx
+// 重构前：~80 行的复杂 render，从 beforeValue/afterValue JSON 解析渲染 diff
+{
+  title: '变更详情',
+  key: 'changeDetails',
+  render: (_, record) => {
+    const oldValues = JSON.parse(record.beforeValue)
+    const newValues = JSON.parse(record.afterValue)
+    // ... 字段对比、颜色标记、条件渲染（新增/删除/更新）
+    return <div>{changedKeys.map(key => (
+      <div>{translateFieldName(key)}: {oldValue} → {newValue}</div>
+    ))}</div>
+  }
+}
+
+// ❌ 重构后：简化为读取一个数据库中为空的字段
+{
+  title: '变更摘要',
+  dataIndex: 'changeSummary',  // 数据库中此字段为空！
+  render: (val) => val || '-'  // 全部显示 -
+}
+```
+
+**检查清单**：
+- [ ] 原始 render 函数超过 20 行或包含 JSON 解析？→ 不能简化为简单文本
+- [ ] 重构后使用的字段（changeSummary）在数据库中是否有数据？
+- [ ] 渲染效果是否等价（颜色标记、diff 对比、条件显示）
+- [ ] 数据源是否一致（beforeValue/afterValue vs changeSummary）
+
+**适用范围**：
+- 表格列的 render 函数重构
+- 列表项的自定义渲染重构
+- 任何包含 JSON 解析、条件格式化的渲染逻辑
 
 ---
 

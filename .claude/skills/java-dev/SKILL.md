@@ -344,6 +344,37 @@ public class TenantHelper {
 
 > 详见 `refactor-safety` skill - 陷阱 #5
 
+### 分页参数规范（Spring Data JPA）
+
+Spring Data JPA 分页索引从 0 开始。重构分页参数时必须确保前后端索引基准一致。
+
+| 规则 | 说明 |
+|------|------|
+| 全栈统一 0-based | 前端、Controller、Service、JPA 全部使用 0-based 索引 |
+| Controller 默认值必须是 0 | `@RequestParam(defaultValue = "0") int page` |
+| Service 直接使用 page | `PageRequest.of(page, size)`，不要 `page - 1` |
+
+```java
+// ❌ 错误：前端传 page=0，Controller 默认值 1，Service 内部 -1
+@GetMapping("/list")
+public Page<Product> list(@RequestParam(defaultValue = "1") int page) {
+    return service.list(page);  // Service 内部 PageRequest.of(page - 1, size)
+}
+// 问题：前端传 page=0 → Service 计算 page - 1 = -1 → 异常
+
+// ✅ 正确：全栈统一 0-based
+@GetMapping("/list")
+public Page<Product> list(@RequestParam(defaultValue = "0") int page) {
+    return service.list(page);  // Service 内部 PageRequest.of(page, size)
+}
+```
+
+**重构检查清单**：
+- [ ] 前端调用传递 `page: 0`（第 1 页）
+- [ ] Controller 默认值是 `0`
+- [ ] Service 使用 `PageRequest.of(page, size)`（不减 1）
+- [ ] 测试 `page=0` 和 `page=1` 都能正常返回数据
+
 ---
 
 ## 输入校验规范

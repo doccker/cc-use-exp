@@ -1,0 +1,7 @@
+# 自定义说明 profile：为 model_instructions_file 预留项目级挂载点。
+# 仅在明确需要附加说明文件时使用，不影响通用日常 profile。
+[profiles."cc-custom-instructions"]
+model = "gpt-5.4"
+review_model = "gpt-5.4"
+model_reasoning_effort = "high"
+model_instructions_file = "./instructions/custom.md"
