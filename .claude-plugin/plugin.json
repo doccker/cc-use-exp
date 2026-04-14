@@ -10,6 +10,6 @@
   "license": "PolyForm-Noncommercial-1.0.0",
   "keywords": ["claude-code", "gemini-cli", "codex", "cursor", "ai-coding", "configuration"],
   "category": "productivity",
-  "skills": ".claude/skills",
-  "commands": ".claude/commands"
+  "skills": [".claude/skills"],
+  "commands": [".claude/commands"]
 }
