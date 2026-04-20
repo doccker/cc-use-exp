@@ -5,7 +5,7 @@
 <!-- 封面图 -->
 <img src="pic/cover.svg" alt="AI 编码助手配置体系" width="100%" style="max-width: 800px" />
 
-> 保留你熟悉的 CLI/IDE，让 Claude Code、Gemini CLI、Codex、Cursor 开箱即用
+> 保留你熟悉的 CLI/IDE，让 Claude Code、Gemini CLI、Codex、Cursor、GitHub Copilot 开箱即用
 >
 > 按费力度从低到高，用最少操作获得最大帮助
 
@@ -28,14 +28,14 @@
 
 ## 适合谁
 
-- 同时使用 Claude Code、Gemini CLI、Codex、Cursor 中的一种或多种 CLI/IDE
+- 同时使用 Claude Code、Gemini CLI、Codex、Cursor、GitHub Copilot 中的一种或多种 CLI/IDE
 - 不想在每个 session 里重复交代技术栈、项目结构和编码规范
 - 希望把团队协作方式沉淀成可维护的 rules、skills 和 workflow
 - 想降低 AI 常见翻车和危险操作风险
 
 ## 核心收益
 
-- 一次维护，四套工具分别同步到各自用户级入口
+- 一次维护，五套工具分别同步到各自用户级入口
 - 分层加载（rules 常驻 + skills 按需 + workflow 显式调用），减少常驻上下文负担
 - 内置防御性规则，降低修改测试适配错误、危险命令、过度重构等常见问题
 - 保留你熟悉的 CLI，不强迫切换到新的交互方式
@@ -144,6 +144,15 @@ bash <(curl -sL https://raw.githubusercontent.com/doccker/cc-use-exp/main/tools/
 
 更新配置：重新运行安装脚本
 
+#### GitHub Copilot
+
+在终端执行：
+```bash
+bash <(curl -sL https://raw.githubusercontent.com/doccker/cc-use-exp/main/tools/install-copilot.sh)
+```
+
+更新配置：重新运行安装脚本
+
 ---
 
 ### 方式 B: 手动同步（开发者）
@@ -162,7 +171,7 @@ cd cc-use-exp
 tools\sync-config.bat
 ```
 
-脚本会自动同步四套配置：
+脚本会自动同步五套配置：
 
 - `.claude/` → `~/.claude/`
 - `.gemini/` → `~/.gemini/`
@@ -175,6 +184,9 @@ tools\sync-config.bat
 - `.cursor/skills/*` → `~/.cursor/skills/`
 - `.cursor/commands/*.md` → `~/.cursor/skills/{name}/SKILL.md`（命令式技能兼容层）
 - `.cursor/templates/*` → `~/.cursor/templates/`
+- `.github/copilot-instructions.md` → `~/.github/copilot-instructions.md`
+- `.github/instructions/*.instructions.md` → `~/.github/instructions/`
+- `AGENTS.md`（若仓库存在）→ `~/.github/AGENTS.md`
 
 其中 Codex 采用**增量部署**：
 
@@ -199,6 +211,7 @@ tools\sync-config.bat
 | Codex | `.codex/` | `~/.codex/` + `~/.agents/skills/` | 会话内或 Shell | ✅ 完整支持（增量部署） |
 | Gemini CLI | `.gemini/` | `~/.gemini/` | Shell 脚本 | ✅ 完整支持 |
 | Cursor | `.cursor/` | 项目内 + 用户级 | Shell 脚本 | ✅ 完整支持 |
+| GitHub Copilot | `.github/` + `AGENTS.md` | `~/.github/` + 仓库内 | Shell 脚本 | ✅ 新增支持 |
 
 **安装方式详情**：
 
@@ -225,11 +238,12 @@ tools\sync-config.bat
   </details>
 
 <details>
-<summary><strong>Gemini CLI / Cursor</strong></summary>
+<summary><strong>Gemini CLI / Cursor / GitHub Copilot</strong></summary>
 
 - **Shell 脚本安装**
   - Gemini：`bash <(curl -sL https://raw.githubusercontent.com/doccker/cc-use-exp/main/tools/install-gemini.sh)`
   - Cursor：`bash <(curl -sL https://raw.githubusercontent.com/doccker/cc-use-exp/main/tools/install-cursor.sh)`
+  - GitHub Copilot：`bash <(curl -sL https://raw.githubusercontent.com/doccker/cc-use-exp/main/tools/install-copilot.sh)`
   </details>
 
 
@@ -244,7 +258,8 @@ tools\sync-config.bat
 ├── .claude/  ──覆盖──>    ~/.claude/  <──读取──                 .claude/ (空)
 ├── .gemini/  ──覆盖──>    ~/.gemini/  <──读取──                 .gemini/ (空)
 ├── .codex/   ──增量部署──> ~/.codex/ + ~/.agents/skills/ <──读取── .codex/ (空)
-└── .cursor/  ──项目内 rules + 用户级兼容同步──> ~/.cursor/skills/ + ~/.cursor/templates/ <──读取── .cursor/ (空)
+├── .cursor/  ──项目内 rules + 用户级兼容同步──> ~/.cursor/skills/ + ~/.cursor/templates/ <──读取── .cursor/ (空)
+└── .github/ + AGENTS.md ──覆盖/兜底──> ~/.github/ <──读取── .github/ + AGENTS.md
 ```
 
 - **本项目**：配置开发/维护环境，不参与实际业务开发
@@ -258,6 +273,7 @@ tools\sync-config.bat
 | `.claude/` | Claude Code | Anthropic 的 CLI 工具 |
 | `.gemini/` | Gemini CLI | Google 的 CLI 工具 |
 | `.codex/` | Codex | OpenAI 的 CLI 工具，项目内维护权威源，部署时分发到 `~/.codex/` 和 `~/.agents/skills/` |
+| `.github/` + `AGENTS.md` | GitHub Copilot | GitHub Copilot / coding agent 的仓库级配置与用户级兜底配置 |
 | `.cursor/` | Cursor | AI IDE，项目内 `.cursor/rules/` 为主；用户级复用 `~/.cursor/skills/`、`~/.cursor/templates/`，并兼容性同步 `~/.cursor/rules/` |
 
 **四者相互独立**：

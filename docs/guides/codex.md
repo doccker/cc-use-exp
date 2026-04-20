@@ -303,3 +303,28 @@ codex -p cc-custom-instructions
 ├── tasks/
 └── templates/
 ```
+
+
+---
+
+## 附录：GitHub Copilot 支持
+
+项目现已支持 GitHub Copilot，重点覆盖 Copilot coding agent 场景。
+
+当前采用的配置载体：
+
+- `.github/copilot-instructions.md`：仓库级 Copilot 指令
+- `.github/instructions/*.instructions.md`：按路径细分的补充说明
+- `AGENTS.md`：供支持 agent instructions 的场景复用
+
+如需安装用户级兜底配置，可执行：
+
+```bash
+bash <(curl -sL https://raw.githubusercontent.com/doccker/cc-use-exp/main/tools/install-copilot.sh)
+```
+
+同步后目标位置为：
+
+- `~/.github/copilot-instructions.md`
+- `~/.github/instructions/`
+- `~/.github/AGENTS.md`（若仓库存在）
