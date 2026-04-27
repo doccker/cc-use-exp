@@ -65,11 +65,27 @@ git diff
 |------|---------|------|
 | file1 | 新增/修改/删除 | 简要说明 |
 
-## 快速提交
+## 快速提交（heredoc，强制保留多行）
 
 复制以下命令手动执行（不要由 Claude Code 代执行）：
-git add <文件列表> && git commit -m "<生成的message>"
+
+git add <文件列表> && git commit -m "$(cat <<'EOF'
+<type>: <subject>
+
+- <变更点1>
+- <变更点2>
+- <变更点3>
+EOF
+)"
 ```
+
+### 5. 落盘约束
+
+- **必须**用 heredoc（`<<'EOF'` 单引号围栏，防变量展开），让 git 在仓库里保留 subject 单行 + 空行 + body 多行 bullet 的结构。
+- ❌ `git commit -m "feat: x\n- a\n- b"` —— `\n` 是字面字符串，shell 不会解析，整段会塞进 subject。
+- ❌ `git commit -m "feat: x - a - b"` —— body 被压成单行，GitHub Release / `git log` 都无法渲染列表。
+- ❌ 把多个 bullet 用空格拼进 subject —— subject 应保持单一主题，不超过 80 字符。
+- 落盘后用 `git log -1 --pretty=format:'%s%n---%n%b'` 自验。
 
 ---
 

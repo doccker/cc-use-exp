@@ -1,6 +1,6 @@
 interface:
   display_name: "commit-msg"
   short_description: "显式生成 Git commit message，默认分析 staged diff。"
-  default_prompt: "Use $commit-msg to generate a git commit message for the current change set, preferring staged diff unless the user asks for all changes."
+  default_prompt: "Use $commit-msg to generate a git commit message for the current change set, preferring staged diff unless the user asks for all changes. Always end the reply with a heredoc git commit command (git commit -m \"$(cat <<'EOF' ... EOF)\") so subject and bullet body survive shell parsing — never output a single-line -m \"...\\n...\" form, and never collapse body bullets into the subject."
 policy:
   allow_implicit_invocation: false
