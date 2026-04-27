@@ -6,14 +6,14 @@
   },
   "metadata": {
     "description": "AI 编码助手配置体系 - 支持 Claude Code、Gemini CLI、Codex、Cursor 的统一配置模板",
-    "version": "1.0.28"
+    "version": "1.0.29"
   },
   "plugins": [
     {
       "name": "cc-use-exp",
       "source": "./",
       "description": "AI 编码助手配置体系 - 跨工具的 rules、skills、commands 配置模板",
-      "version": "1.0.28",
+      "version": "1.0.29",
       "author": {
         "name": "wwj"
       },
