@@ -1,7 +1,7 @@
 {
   "name": "cc-use-exp",
   "description": "AI 编码助手配置体系 - 跨工具的 rules、skills、commands 配置模板",
-  "version": "1.0.30",
+  "version": "1.0.31",
   "author": {
     "name": "wwj"
   },
