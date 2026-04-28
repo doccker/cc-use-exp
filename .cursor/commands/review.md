@@ -81,35 +81,17 @@ fi
 
 ### 变更信息
 
-根据是否指定了 commit，使用不同的 Git 命令获取变更信息：
+根据是否指定了 commit，使用 Bash 工具执行不同的 Git 命令获取变更信息：
 
-**如果指定了 commit（TARGET 非空）**：
+**如果指定了 commit（TARGET 非空）**，依次执行：
+- 提交记录：`git show --no-patch <TARGET>`
+- 变更内容：`git show <TARGET>`
 
-```bash
-# Git 状态（仅当前分支需要）
-if [ -z "$TARGET" ]; then
-  echo "!`git status`"
-fi
-
-# 变更文件
-if [ -z "$TARGET" ]; then
-  echo "!`git diff --name-only origin/HEAD...`"
-fi
-
-# 提交记录
-if [ -n "$TARGET" ]; then
-  echo "!`git show --no-patch $TARGET`"
-else
-  echo "!`git log --no-decorate origin/HEAD...`"
-fi
-
-# 变更内容
-if [ -n "$TARGET" ]; then
-  echo "!`git show $TARGET`"
-else
-  echo "!`git diff --merge-base origin/HEAD`"
-fi
-```
+**如果审查当前分支**，依次执行：
+- Git 状态：`git status`
+- 变更文件：`git diff --name-only origin/HEAD...`
+- 提交记录：`git log --no-decorate origin/HEAD...`
+- 变更内容：`git diff --merge-base origin/HEAD`
 
 ### 审查框架
 
@@ -275,38 +257,16 @@ git diff
 
 ### 上下文信息
 
-根据是否指定了 commit，使用不同的命令获取上下文：
+根据是否指定了 commit，使用 Bash 工具执行以下命令获取上下文：
 
 **如果指定了 commit（TARGET 非空）**：
-
-GIT STATUS: （跳过，单个 commit 不需要）
-
-COMMIT INFO:
-```
-!`git show --no-patch $TARGET`
-```
-
-DIFF CONTENT:
-```
-!`git show $TARGET`
-```
+- 提交信息：`git show --no-patch <TARGET>`
+- 变更内容：`git show <TARGET>`
 
 **如果审查当前分支**：
-
-GIT STATUS:
-```
-!`git status`
-```
-
-FILES MODIFIED:
-```
-!`git diff --name-only origin/HEAD... 2>/dev/null || git diff --name-only HEAD~5`
-```
-
-DIFF CONTENT:
-```
-!`git diff --merge-base origin/HEAD 2>/dev/null || git diff HEAD~5`
-```
+- Git 状态：`git status`
+- 变更文件：`git diff --name-only origin/HEAD...`，失败回退 `git diff --name-only HEAD~5`
+- 变更内容：`git diff --merge-base origin/HEAD`，失败回退 `git diff HEAD~5`
 
 ### 审查目标
 
