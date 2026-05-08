@@ -1,5 +1,5 @@
 ---
-name: java-dev
+name: cc-java-dev
 description: Java 开发规范，包含命名约定、异常处理、Spring Boot 最佳实践等
 version: v3.0
 paths:

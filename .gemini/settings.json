@@ -38,7 +38,7 @@
   },
   "mcpServers": {
     "context7": {
-      "httpUrl": "${CONTEXT7_URL:-https://mcp.context7.com/mcp}",
+      "httpUrl": "https://mcp.context7.com/mcp",
       "timeout": 60000,
       "trust": true
     },
