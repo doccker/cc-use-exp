@@ -585,6 +585,103 @@ public class ImageUrlResolver {
 
 ---
 
+## 陷阱 #10: 位置对应集合的去重/过滤错位
+
+**场景**: 多条 list 在最终输出中按索引位置一一对应（如 `[公司, 单号]` / `[姓名, 年龄]` / `[字段名, 字段值]` / `[问题, 答案]`），重构时只对其中一条 `distinct()` / `filter()` / `sorted()`，其他不动 → 长度变了，索引错位，输出数据彻底乱套。
+
+### 问题根因
+
+代码里两条 `List` 看似独立，但语义上是 zip 关系。开发者以为"去重让结果更干净"，但实际上破坏了"第 i 个公司对应第 i 个单号"的隐式契约。这种错误特别隐蔽：
+
+- 单元测试经常没覆盖（多包裹同公司的情况）
+- 编译/类型检查不会报错（两条 list 类型一致）
+- 测试数据巧合地都不重复时，根本看不出来
+- 只有真实业务数据出现重复时才爆雷（`顺丰:1, 圆通:2, 顺丰:3` → 公司 `顺丰;圆通`、单号 `1;2;3`）
+
+### 错误示例（来自真实 review）
+
+```java
+// ❌ 错误: companies 去重，numbers 不去重，破坏索引对应
+List<String> companies = packages.stream()
+    .map(ShippingPackage::getCompany)
+    .filter(StringUtils::hasText)
+    .distinct()
+    .collect(Collectors.toList());
+List<String> numbers = packages.stream()
+    .map(ShippingPackage::getTrackingNo)
+    .collect(Collectors.toList());
+
+writeRow(sheet, "快递公司", String.join(";", companies));
+writeRow(sheet, "快递单号", String.join(";", numbers));
+// packages = [顺丰:SF1, 圆通:YT2, 顺丰:SF3]
+// companies = "顺丰;圆通" (2 段)
+// numbers   = "SF1;SF2;SF3" (3 段)
+// 微信侧导入时按位置匹配 → 圆通 ↔ SF2，顺丰 ↔ SF3，物流错乱
+```
+
+### 正确做法
+
+#### 方案 A：对齐操作（最小改动）
+
+要么两条 list 一起 distinct/filter，要么都不动：
+
+```java
+// ✅ 都不去重，保留所有包裹按顺序对应
+List<String> companies = packages.stream()
+    .map(ShippingPackage::getCompany)
+    .collect(Collectors.toList());
+List<String> numbers = packages.stream()
+    .map(ShippingPackage::getTrackingNo)
+    .collect(Collectors.toList());
+
+if (companies.stream().distinct().count() == 1) {
+    writeRow(sheet, "快递公司", companies.get(0));
+} else {
+    writeRow(sheet, "快递公司", String.join(";", companies));
+}
+writeRow(sheet, "快递单号", String.join(";", numbers));
+```
+
+#### 方案 B：改用配对结构（推荐，从根上消除问题）
+
+把"两条并行 list"改成"一条 list of Pair/Record"，索引对应关系由语言保证：
+
+```java
+public record ShippingPackage(String company, String trackingNo) {}
+
+List<ShippingPackage> packages = order.getPackages();
+
+String companyValue = packages.size() == 1
+    ? packages.get(0).company()
+    : packages.stream().map(ShippingPackage::company).collect(joining(";"));
+String numberValue = packages.stream()
+    .map(ShippingPackage::trackingNo)
+    .collect(joining(";"));
+```
+
+任何后续操作（filter、sorted、partition）都作用在整个 record 上，不会出现单字段被改而其他字段不动的情况。
+
+### 何时用哪个
+
+| 场景 | 推荐方案 |
+|------|---------|
+| 现有代码只是临时拼接，改动成本高 | 方案 A：对齐操作 |
+| 这两个字段在多处一起出现，或后续可能加更多字段 | 方案 B：配对结构 |
+| 字段超过 3 个还按位置对应 | 必须用方案 B（再多就读不懂了） |
+
+### 检查清单
+
+- [ ] 是否存在 2 条以上的 list 在最终输出/拼接时按索引位置对应
+- [ ] 重构时是否只对其中一条做了 distinct/filter/sorted（破坏对齐）
+- [ ] 是否考虑过改用 `List<Pair>` / `List<Record>` 从根上消除并行 list
+- [ ] 测试数据是否覆盖了"重复值"场景（同公司多包裹、同名多记录）
+
+### 多语言示例
+
+完整的 Java（Stream + Record）/ Go（slice + struct）/ TypeScript（Array + interface）实现示例见 `references/multi-lang-examples.md`。
+
+---
+
 ## 规则溯源
 
 ```

@@ -203,6 +203,82 @@ request.interceptors.response.use(
 
 ---
 
+## 陷阱 #5: 功能级授权 ≠ 数据级隔离
+
+**场景**: 仅对特定租户/角色/订阅级开放的功能，只在前端用 `isYmhwTenant` / `hasPermission` / `isPaid` 隐藏入口，后端 endpoint 没有独立的功能授权校验
+
+### 问题根因
+
+前端 UI 控制（按钮隐藏、菜单过滤）只是**用户体验优化**，不是安全边界。任意已登录用户只要知道 endpoint 路径，绕过 UI 直接调用接口，就能使用本不该有的能力。这与"数据层租户隔离"是两个不同维度：
+
+- **数据层（陷阱 #1/#2）**：访问的数据范围（你的数据 vs 他人的数据）
+- **业务层（本陷阱）**：可以使用的功能（你能用什么功能 vs 别人能用什么功能）
+
+典型场景：
+- 租户专属功能（如 YMHW 小程序发货模板导出，仅鱼米好物租户可用）
+- 角色专属功能（仅管理员可批量删除/批量导出）
+- 订阅/版本专属功能（付费版 AI 分析、企业版高级报表）
+- 功能开关（feature flag 灰度发布）
+
+### 错误示例
+
+```java
+// ❌ 错误: 后端只过滤当前租户数据，没校验"该租户是否启用该功能"
+@PostMapping("/orders/miniapp-shipping-template/export")
+public ResponseEntity<byte[]> export(@RequestBody ExportRequest req) {
+    Long tenantId = TenantContext.getTenantId();
+    // 只查当前租户的订单（数据隔离 OK），但任何已登录租户都能调用这个接口
+    return service.export(tenantId, req.getOrderIds());
+}
+```
+
+```tsx
+// 前端通过 isYmhwTenant 隐藏入口（只是体验优化，不是安全边界）
+{isYmhwTenant && <Button onClick={handleExport}>导出小程序发货模板</Button>}
+```
+
+### 正确做法
+
+```java
+// ✅ 正确: endpoint 入口处独立校验"该租户是否启用该功能"
+@PostMapping("/orders/miniapp-shipping-template/export")
+public ResponseEntity<byte[]> export(@RequestBody ExportRequest req) {
+    Long tenantId = TenantContext.getTenantId();
+
+    // 关键: 后端独立校验租户编码/功能开关，不依赖前端
+    TenantMiniAppConfig config = configRepository.findByTenantId(tenantId)
+        .orElseThrow(() -> new BusinessException(403, "未启用小程序发货模板导出"));
+    if (!"YMHW".equalsIgnoreCase(config.getTenantCode())) {
+        throw new BusinessException(403, "仅鱼米好物租户支持导出小程序发货模板");
+    }
+
+    return service.export(tenantId, req.getOrderIds());
+}
+```
+
+### 实现策略
+
+| 授权依据 | 实现方式 | 适用场景 |
+|---------|---------|---------|
+| 租户编码白名单 | endpoint 入口 if 校验 / `@RequireTenantCode` 注解 + AOP | 单个/少量租户专属 |
+| 角色权限 | `@PreAuthorize("hasRole('ADMIN')")` / Spring Security / Casbin | RBAC 体系内 |
+| 订阅状态 | endpoint 入口校验当前订阅是否覆盖该功能 | SaaS 分版本 |
+
+> **优先级**：1-2 个 endpoint 用直接 if 校验（最简、可读性高）；3 个以上同样限制再考虑 AOP/middleware 抽象，避免过度工程化。
+
+### 检查清单
+
+- [ ] endpoint 入口是否有"该用户/租户是否启用该功能"的独立校验（不依赖前端隐藏）
+- [ ] 授权依据是否明确（租户编码 / 角色 / 功能开关 / 订阅状态）
+- [ ] 校验失败时是否返回 403 + 业务可读的原因（不是 500 或空白响应）
+- [ ] 是否做过"绕过 UI 直接调用 API"的渗透测试（用 curl/Postman 模拟非授权租户）
+
+### 多语言示例
+
+完整的 Java（Spring Boot 注解 AOP）/ Go（Gin middleware）/ TypeScript（Express middleware + NestJS Guard）实现示例见 `references/multi-lang-examples.md`。
+
+---
+
 ## 检查清单（多租户隔离）
 
 **认证与授权**:
@@ -210,6 +286,12 @@ request.interceptors.response.use(
 - [ ] 请求头/参数中的租户标识是否只做路由，不做信任
 - [ ] token tenantId 与路由租户是否做了一致性校验
 - [ ] 校验失败是否返回 403
+
+**功能授权**（业务层，参见陷阱 #5）:
+- [ ] 仅特定租户/角色/订阅级开放的功能，endpoint 入口是否有独立校验
+- [ ] 是否避免了"只在前端隐藏按钮，后端无校验"的反模式
+- [ ] 授权失败返回 403 + 业务可读原因
+- [ ] 是否做过"绕过 UI 直接调用 API"的渗透测试
 
 **数据隔离**:
 - [ ] 是否有全局租户过滤机制
