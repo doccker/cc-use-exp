@@ -63,6 +63,77 @@ public boolean preHandle(HttpServletRequest request, ...) {
 
 ---
 
+## 陷阱 #1.5: Service 层调用 `Repository.findById(id)` 缺租户过滤
+
+> 与陷阱 #2 并行：陷阱 #2 是「全局过滤兜底」，本陷阱是「显式深度防御」。即使项目已用 Hibernate `@Filter` / MyBatis 拦截器，仍建议 Service 层显式调用 `findByTenantIdAndId`——主键直查在二级缓存命中、`getReferenceById` 等路径上常常绕过全局过滤。两层一起用，可读性也更好（看 Service 代码就知道隔离了 tenantId）。
+
+**场景**: 即使有了全局过滤机制，开发者在 Service 里直接 `repo.findById(id)` 仍可能绕过过滤——主键查询常常被 JPA/Hibernate 当成"按 ID 直查"，跳过 entity filter
+
+### 问题根因
+
+- JPA 二级缓存 / `findById` 走持久化上下文，会跳过 `@Filter`
+- 攻击者拿到任意 ID（订单号、用户 ID 可能从其他渠道枚举）就能跨租户读
+- 单个漏点就足以泄露：N+1 优化时常常出现 `for (X x : list) { ... repo.findById(x.foreignKey) ... }`，每次都漏 tenantId
+
+### 错误示例
+
+```java
+// ❌ 错误：直接按主键查
+WxUser buyer = wxUserRepository.findById(buyerUserId).orElse(null);
+
+// ❌ 错误：N+1 修复时也漏掉
+List<User> users = userIds.stream()
+    .map(id -> userRepository.findById(id).orElse(null))  // ← 无租户过滤
+    .toList();
+
+// ❌ 错误：批量 IN 也忘记带 tenantId
+List<User> users = userRepository.findAllById(userIds);
+```
+
+### 正确做法
+
+Repository 必须提供「带 tenantId 的主键查询」方法，Service 一律调用它：
+
+```java
+// ✅ Repository 强制提供租户感知方法
+public interface WxUserRepository extends JpaRepository<WxUser, Long> {
+    Optional<WxUser> findByTenantIdAndId(Long tenantId, Long id);
+    List<WxUser> findByTenantIdAndIdIn(Long tenantId, Collection<Long> ids);
+}
+
+// ✅ Service 一律带 tenantId
+WxUser buyer = wxUserRepository.findByTenantIdAndId(tenantId, buyerUserId).orElse(null);
+
+// ✅ 批量也带
+Map<Long, WxUser> userMap = wxUserRepository
+        .findByTenantIdAndIdIn(tenantId, userIds)
+        .stream()
+        .collect(Collectors.toMap(WxUser::getId, u -> u));
+```
+
+### 嗅探信号（review/审计时按这些 grep）
+
+```bash
+# 1. Service 层任何裸 findById（绝大多数应迁移）
+grep -rn "Repository.findById(" src/main/java/**/service/
+
+# 2. JpaRepository 默认方法（这些都"按 ID 直查"，绕开 entity filter）
+grep -rnE "(findById|getOne|getById|getReferenceById|findAllById)\(" src/main/java/
+
+# 3. 检查是否所有 Repository 都有租户感知主键方法
+grep -L "findByTenantIdAndId" src/main/java/**/repository/*Repository.java
+```
+
+### 检查清单
+
+- [ ] Service 层禁止裸 `findById` / `getOne` / `getReferenceById` / `findAllById`
+- [ ] 每个 Repository 至少提供 `findByTenantIdAndId` 和 `findByTenantIdAndIdIn`
+- [ ] 引入新 Repository 时，主键方法和 IN 方法**必须**租户感知
+- [ ] CI 检查（可选）：扫描 `*Service.java` 里的 `findById(` 调用并失败构建
+- [ ] 跨租户管理后台的"超管"接口需要独立 endpoint + 显式注释（不能复用业务 findById）
+
+---
+
 ## 陷阱 #2: 数据查询层缺少全局租户过滤
 
 **场景**: 部分查询绕过了租户过滤，导致跨租户数据泄露

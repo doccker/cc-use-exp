@@ -100,6 +100,7 @@ COMMIT_MSG=$(git log -1 --pretty=format:"%s" "$TARGET")
 - 尽量带精确文件引用。
 - 总结保持简短，放在 findings 之后。
 - 若没有发现问题，要明确写出“未发现明确问题”，并说明残余风险或验证盲区。
+- **建议项必须打分类标签**（✅本轮修复 / 📝技术债 / ❌拒绝），禁用「留给下次迭代」等悬空话术，详见 `references/quick-review.md` 与 `references/full-review.md`。
 
 ## 按需展开
 
