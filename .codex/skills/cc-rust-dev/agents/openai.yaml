@@ -1,0 +1,5 @@
+interface:
+  display_name: "CC Rust Dev"
+  short_description: "Rust 模块组织、错误处理、Tokio 异步与 Axum 路由规范。"
+policy:
+  allow_implicit_invocation: true
