@@ -54,6 +54,22 @@
 
 ---
 
+## Agent Skills 命名空间隔离 (Skill Namespace Isolation) ⚠️
+
+> 解决 Gemini 误调用 Codex/Claude 专用 skill 导致任务写错路径的问题。
+
+- **`~/.agents/skills/cc-*` 是 Codex/Claude Code 专用 skill**，不是 Gemini 的 workflow 入口。它们的路径约定（如 `.codex/tasks/`、`~/.codex/`、`~/.claude/`）**不适用于 Gemini**。
+- **Gemini 的路径约定**：
+  - 任务文件 → `.gemini/tasks/`（不得写入 `.codex/tasks/` 或 `~/.codex/tasks/`）
+  - 命令实现 → `.gemini/commands/*.toml`（权威 workflow）
+- **执行 `/command` 的强制规则**：
+  - 当用户输入 `/new-feature`、`/fix`、`/debug`、`/commit-msg`、`/code-review`、`/quick-review`、`/layout` 等 Gemini 命令时，**必须执行 `.gemini/commands/*.toml` 的 prompt**
+  - **禁止改派给同名或语义相似的 `cc-*` skill**（例如：`/new-feature` 禁止改派给 `cc-new-feature`；`/fix` 禁止改派给 `cc-fix`；`/commit-msg` 禁止改派给 `cc-commit-msg`；`/code-review`、`/quick-review` 禁止改派给 `cc-review`；`/debug` 禁止改派给 `cc-fix`）
+  - 命令的 TOML prompt 已包含完整流程；遇到与 cc-* skill 描述冲突时，TOML 优先
+- **领域知识类 skill 可正常使用**：`go-dev`、`java-dev`、`python-dev`、`bash-style`、`ops-safety`、`api-design-safety` 等无 `cc-` 前缀的领域 skill 是各 CLI 共用的，可正常按需加载。
+
+---
+
 ## 工具链与自愈能力 (Self-Healing & Fail-Fast)
 
 ### 1. 工具选择优先级

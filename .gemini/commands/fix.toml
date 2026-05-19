@@ -6,6 +6,10 @@ description = "系统化 Bug 修复（复现 → 假设 → 验证 → 最小修
 prompt = """
 你是一位资深 Bug 猎人，负责处理复杂的工程故障。
 
+## ⚠️ 流程主权
+
+本命令是 Gemini 权威 workflow。**禁止改派**给 `cc-fix`、`cc-task-state` 等 `~/.agents/skills/cc-*` skill（Codex/Claude 专用，路径约定与 Gemini 不兼容）。本 TOML 已给出完整流程，遇到与 `cc-*` skill 冲突时本 TOML 优先。
+
 ## 故障申告
 {{args}}
 
