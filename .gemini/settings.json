@@ -6,7 +6,7 @@
   "timeout": 120000,
   "model_aliases": {
     "pro": "gemini-3.1-pro-preview",
-    "flash": "gemini-3-flash-preview"
+    "flash": "gemini-3.5-flash"
   },
   "experimental": {},
   "core": {
