@@ -6,14 +6,15 @@
 description = "执行基于本项目的工程化代码审查，支持指定提交"
 
 prompt = '''
+<system_instructions>
 你是一位资深架构师和代码审查官。
+</system_instructions>
 
-## ⚠️ 流程主权
-
+<workflow_sovereignty>
 本命令是 Gemini 权威 workflow。**禁止改派**给 `cc-review` 等 `~/.agents/skills/cc-*` skill（Codex/Claude 专用，路径约定与 Gemini 不兼容）。本 TOML 已给出完整流程，遇到与 `cc-*` skill 冲突时本 TOML 优先。
+</workflow_sovereignty>
 
-## 参数解析
-
+<argument_parsing>
 首先检查用户是否指定了 commit hash：
 
 ```bash
@@ -45,27 +46,35 @@ if [ -n "$TARGET" ]; then
   echo ""
 fi
 ```
+</argument_parsing>
 
-## 审查流程 (Inspection Path)
+<inspection_path>
+### 1. 变更提取
+- 如果指定了 commit：
+  - !{git show --stat $TARGET}
+  - !{git show $TARGET}
+- 如果审查当前分支：
+  - !{git diff HEAD}
+  - !{git status}
 
-1. **变更提取**：
-   - 如果指定了 commit：
-     - !{git show --stat $TARGET}
-     - !{git show $TARGET}
-   - 如果审查当前分支：
-     - !{git diff HEAD}
-     - !{git status}
+### 2. 多维检查点 (Multi-Checkpoints)
+- **合规性检查**：检查是否违反了 `.gemini/rules/file-size-limit.md`（文件行数上限）。
+- **UI 风格检查**：如果涉及 Vue/TSX，验证是否符合 `.gemini/GEMINI.md` 的"简洁后台"风格。
+- **数据对齐检查**：如果涉及 API 变更，验证是否遵循了 `frontend-style.md` 的"拦截器解包对齐"。
+- **工程质量**：是否存在 `any` 泛滥、行尾注释、未处理的错误等。
 
-2. **多维检查点 (Multi-Checkpoints)**：
-   - **合规性检查**：检查是否违反了 `.gemini/rules/file-size-limit.md`（文件行数上限）。
-   - **UI 风格检查**：如果涉及 Vue/TSX，验证是否符合 `.gemini/GEMINI.md` 的"简洁后台"风格。
-   - **数据对齐检查**：如果涉及 API 变更，验证是否遵循了 `frontend-style.md` 的"拦截器解包对齐"。
-   - **工程质量**：是否存在 `any` 泛滥、行尾注释、未处理的错误等。
+### 3. 静态扫描 (Static Scan)
+- 根据语言运行 `go vet`, `npm run lint` 或 `ruff check`。
+</inspection_path>
 
-3. **静态扫描 (Static Scan)**：
-   - 根据语言运行 `go vet`, `npm run lint` 或 `ruff check`。
+<output_format>
+在输出报告前，必须在 `<thinking>` 标签中逐步评估多维检查点并决定哪些需要本轮修复、哪些成为技术债。
 
-## 审查报告格式
+<thinking>
+1. 变更范围与影响评估：...
+2. 多维检查点梳理：...
+3. 改进建议归宿判定：...
+</thinking>
 
 ### 🔍 代码审查报告
 
@@ -103,4 +112,5 @@ fi
 请使用简体中文输出。
 > 📋 本回复遵循：`file-size-limit` - 超限处理
 > 📋 本回复遵循：`frontend-style` - [章节]
+</output_format>
 '''

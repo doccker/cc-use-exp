@@ -2,6 +2,7 @@
 name: python-dev
 description: Python 开发规范，包含 PEP 8 风格、类型注解、异步编程、性能优化等。当操作 .py, pyproject.toml, requirements.txt 文件时自动激活。
 ---
+<instructions>
 
 # Python 开发规范
 
@@ -58,3 +59,5 @@ except DatabaseError as e:
 ---
 
 > 📋 本回复遵循：`python-dev` - [章节]
+
+</instructions>

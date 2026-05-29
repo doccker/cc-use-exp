@@ -4,6 +4,7 @@ description: >-
   当代码涉及多租户隔离（TenantContext、tenantId、租户拦截器/过滤器、X-Tenant-Code）时触发。
   防止租户越权访问、数据串租户等安全问题。
 ---
+<instructions>
 
 # 多租户隔离安全规范
 
@@ -393,3 +394,5 @@ public ResponseEntity<byte[]> export(@RequestBody ExportRequest req) {
 ```
 > 📋 本回复遵循：`multi-tenant-safety` - [章节名]
 ```
+
+</instructions>

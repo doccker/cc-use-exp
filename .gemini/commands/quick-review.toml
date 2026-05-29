@@ -4,18 +4,28 @@
 description = "快速审查（一键完成 git diff + 代码审查）"
 
 prompt = """
+<system_instructions>
 快速审查当前分支的变更。
+</system_instructions>
 
-## ⚠️ 流程主权
-
+<workflow_sovereignty>
 本命令是 Gemini 权威 workflow。**禁止改派**给 `cc-review` 等 `~/.agents/skills/cc-*` skill（Codex/Claude 专用，路径约定与 Gemini 不兼容）。本 TOML 已给出完整流程，遇到与 `cc-*` skill 冲突时本 TOML 优先。
+</workflow_sovereignty>
 
-## 步骤
-
+<execution_path>
+### 步骤
 1. 执行 `!{git diff}` 获取变更
 2. 快速扫描，给出简要意见
+</execution_path>
 
-## 输出格式
+<output_format>
+在输出快速审查意见前，请在 `<thinking>` 标签中先评估这些变更并确定其风险等级及技术债归属。
+
+<thinking>
+1. 观察 Git diff 的变更...
+2. 识别潜在的代码问题和代码规范冲突...
+3. 分配审核意见（立即修复、记入技术债、拒绝）...
+</thinking>
 
 ### 变更概览
 - 修改文件数：X
@@ -43,10 +53,10 @@ prompt = """
 **Gemini TOML 命令限制**：本命令不支持 AskUserQuestion 交互，📝 类建议**不会自动写入** `tech-debt.md`，需用户在看到报告后**手动**追加到项目根目录约定的 `tech-debt.md` 或等价追踪系统。
 
 ### 结论
-
 [可以合并 / 建议修改后合并 / 需要讨论]
 
 ---
 
 请使用简体中文输出，保持简洁。
+</output_format>
 """

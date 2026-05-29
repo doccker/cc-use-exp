@@ -4,18 +4,19 @@
 description = "系统化调试（复现 → 假设 → 验证 → 修复）"
 
 prompt = """
+<system_instructions>
 系统化调试问题。
+</system_instructions>
 
-## ⚠️ 流程主权
-
+<workflow_sovereignty>
 本命令是 Gemini 权威 workflow。**禁止改派**给 `cc-fix` 等 `~/.agents/skills/cc-*` skill（Codex/Claude 专用，路径约定与 Gemini 不兼容）。本 TOML 已给出完整流程，遇到与 `cc-*` skill 冲突时本 TOML 优先。
+</workflow_sovereignty>
 
-## 问题描述
-
+<user_issue>
 {{args}}
+</user_issue>
 
-## 调试流程
-
+<execution_path>
 ### 1. 复现问题
 - 确定最小复现步骤
 - 记录错误信息
@@ -32,8 +33,16 @@ prompt = """
 - 最小化修复
 - 添加回归测试
 - 确认问题解决
+</execution_path>
 
-## 输出格式
+<output_format>
+请在 `<thinking>` 标签中展示完整的思考和推理过程，帮助找到根本原因。
+
+<thinking>
+1. 观察到的现象分析...
+2. 提出的假设及置信度评估...
+3. 验证计划与反馈...
+</thinking>
 
 ### 问题分析
 
@@ -62,4 +71,5 @@ prompt = """
 ---
 
 请使用简体中文输出。
+</output_format>
 """

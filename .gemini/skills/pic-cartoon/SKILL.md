@@ -2,6 +2,7 @@
 name: pic-cartoon
 description: 手绘卡通风信息图生成。用户描述内容后，Gemini 生成手绘涂鸦风格的信息图并保存到本地。手动触发。
 ---
+<instructions>
 
 # Pic Cartoon — 手绘卡通风信息图
 
@@ -80,3 +81,5 @@ description: 手绘卡通风信息图生成。用户描述内容后，Gemini 生
 ---
 
 > 📋 本回复遵循：`pic-cartoon`
+
+</instructions>

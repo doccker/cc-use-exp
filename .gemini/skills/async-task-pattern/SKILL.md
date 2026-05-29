@@ -2,6 +2,7 @@
 name: async-task-pattern
 description: 当 API/任务可能执行超过 10 秒（批量数据处理、远程 API 批量调用、全表扫描、跨租户聚合）时触发。防止同步接口被网关 30s 超时切断、用户重复点击触发并发、状态缓存内存泄漏等问题。提供异步任务状态机标准模板。
 ---
+<instructions>
 
 # 异步任务模式规范
 
@@ -263,3 +264,5 @@ mount 时用 `setTimeout` 递归 polling，状态变 RUNNING 时又起 `setInter
 ```
 > 📋 本回复遵循：`async-task-pattern` - [章节]
 ```
+
+</instructions>

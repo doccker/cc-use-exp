@@ -1,29 +1,71 @@
 description = "拆分 Vue 单文件组件（分步执行，防止 API 超时）"
 
 prompt = """
-## 任务：拆分 Vue 单文件组件
+<system_instructions>
+任务：拆分 Vue 单文件组件。由于大文件处理容易导致 API 超时，本命令采用分步执行模式。
+</system_instructions>
 
+<user_input>
 目标文件：{{args}}
+</user_input>
 
----
-
+<constraints>
 ## ⚠️ 重要：必须分步执行
-
-由于大文件处理容易导致 API 超时，本命令采用分步执行模式。
 **每完成一步后暂停，等待用户输入"继续"再执行下一步。**
 
----
+### 绝对禁止
+- ❌ 修改 v-model 绑定
+- ❌ 修改 props 定义
+- ❌ 修改 emit 事件
+- ❌ 修改函数名和参数
+- ❌ 重构业务逻辑
 
-## 执行步骤
+### 只做代码移动
+- ✅ 原样移动代码到新文件
+- ✅ 添加必要的 import/export
+- ✅ 保持所有变量名、函数名不变
+</constraints>
 
+<execution_path>
 ### 步骤 1/6：分析文件结构（本步骤）
-
 1. 统计文件总行数
 2. 分别统计 template / script / style 行数
 3. 确认项目 CSS 目录（检查 src/assets/styles/ 或 src/styles/）
 4. 输出拆分计划
 
-**输出格式**：
+### 步骤 2/6：生成 .ts 文件 - import 和类型定义
+只生成：
+- import 语句
+- interface / type 定义
+- 常量定义
+**限制**：本步骤输出不超过 100 行
+
+### 步骤 3/6：生成 .ts 文件 - composables 和 ref/reactive
+只生成：
+- ref / reactive 定义
+- computed 定义
+- watch 定义
+**限制**：本步骤输出不超过 200 行
+
+### 步骤 4/6：生成 .ts 文件 - 方法和生命周期
+只生成：
+- 普通方法
+- onMounted / onUnmounted 等生命周期
+- 导出语句
+**限制**：本步骤输出不超过 200 行
+
+### 步骤 5/6：生成 .css 文件
+提取 `<style>` 内容到独立 CSS 文件
+
+### 步骤 6/6：更新原 .vue 文件
+更新 `.vue` 文件：
+- 保留 `<template>`
+- 替换 `<script>` 为 `<script setup lang="ts" src="./xxx.ts">`
+- 替换 `<style>` 为 `<style scoped src="./xxx.scoped.css">`
+</execution_path>
+
+<output_format>
+针对步骤 1，请输出如下格式：
 ```
 ## 文件分析结果
 
@@ -47,73 +89,7 @@ CSS 目录：src/assets/styles/（已存在/需创建）
 输入"继续"执行步骤 2：生成 .ts 文件的 import 和类型定义
 ```
 
----
-
-### 步骤 2/6：生成 .ts 文件 - import 和类型定义
-
-只生成：
-- import 语句
-- interface / type 定义
-- 常量定义
-
-**限制**：本步骤输出不超过 100 行
-
----
-
-### 步骤 3/6：生成 .ts 文件 - composables 和 ref/reactive
-
-只生成：
-- ref / reactive 定义
-- computed 定义
-- watch 定义
-
-**限制**：本步骤输出不超过 200 行
-
----
-
-### 步骤 4/6：生成 .ts 文件 - 方法和生命周期
-
-只生成：
-- 普通方法
-- onMounted / onUnmounted 等生命周期
-- 导出语句
-
-**限制**：本步骤输出不超过 200 行
-
----
-
-### 步骤 5/6：生成 .css 文件
-
-提取 <style> 内容到独立 CSS 文件
-
----
-
-### 步骤 6/6：更新原 .vue 文件
-
-更新 .vue 文件：
-- 保留 <template>
-- 替换 <script> 为 `<script setup lang="ts" src="./xxx.ts">`
-- 替换 <style> 为 `<style scoped src="./xxx.scoped.css">`
-
----
-
-## 安全约束
-
-### 绝对禁止
-- ❌ 修改 v-model 绑定
-- ❌ 修改 props 定义
-- ❌ 修改 emit 事件
-- ❌ 修改函数名和参数
-- ❌ 重构业务逻辑
-
-### 只做代码移动
-- ✅ 原样移动代码到新文件
-- ✅ 添加必要的 import/export
-- ✅ 保持所有变量名、函数名不变
-
----
-
 ## 现在执行步骤 1
-
 请分析目标文件，输出文件结构和拆分计划。
+</output_format>
 """

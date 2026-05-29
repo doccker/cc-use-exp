@@ -2,6 +2,7 @@
 name: go-dev
 description: Go 开发规范，包含命名约定、错误处理、并发编程、测试规范等。当操作 .go, go.mod, go.sum 文件时自动激活。
 ---
+<instructions>
 
 # Go 开发规范
 
@@ -85,3 +86,5 @@ func process(ctx context.Context) error {
 ---
 
 > 📋 本回复遵循：`go-dev` - [章节]
+
+</instructions>

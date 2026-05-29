@@ -14,6 +14,7 @@ paths:
   - "**/package.json"
   - "**/vite.config.*"
 ---
+<instructions>
 
 # 前端开发规范
 
@@ -516,3 +517,5 @@ import type { PageResponse } from '@/types/common'
 ---
 
 > 📋 本回复遵循：`frontend-dev` - [具体章节]
+
+</instructions>

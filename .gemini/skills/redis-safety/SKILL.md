@@ -2,6 +2,7 @@
 name: redis-safety
 description: 当用户操作 Redis 相关代码（go-redis、Jedis、redis-py、ioredis）时触发。涵盖禁止 KEYS 命令、SCAN 替代、大 key 控制、Pipeline 批量、TTL 规范等安全与性能要点。
 ---
+<instructions>
 # Redis 安全规范
 
 > 防止 Redis 常见性能和稳定性问题，适用于所有语言。
@@ -89,3 +90,5 @@ rdb.Set(ctx, "token:123", value, 0)
 // ✅
 rdb.Set(ctx, "token:123", value, 24*time.Hour)
 ```
+
+</instructions>

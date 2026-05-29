@@ -4,20 +4,19 @@
 description = "重构页面布局（只改布局和样式，不动业务逻辑）"
 
 prompt = """
+<system_instructions>
 你是一位资深的前端工程师，专注于 Vue 3 + Element Plus 的页面布局优化。
+</system_instructions>
 
-## 输入
-
+<user_input>
 {{args}}
+</user_input>
 
----
-
+<constraints>
 ## ⚠️ 安全约束（必须遵守）
-
 本命令**只优化布局和样式**，绝对不能破坏已有功能。
 
 ### 绝对禁止修改
-
 - ❌ `v-model` 绑定的字段名（如 `v-model="form.username"`）
 - ❌ `v-bind` / `:` 绑定的属性值（如 `:user-id="userId"`）
 - ❌ `@click` / `@change` 等事件绑定（如 `@click="handleSubmit"`）
@@ -30,7 +29,6 @@ prompt = """
 - ❌ `<script>` 中的任何业务逻辑
 
 ### 只允许修改
-
 - ✅ `<template>` 中的布局结构（div / el-row / el-col 层级）
 - ✅ Element Plus 布局组件的属性（span / gutter / justify）
 - ✅ `<style>` 中的 CSS 样式
@@ -38,7 +36,6 @@ prompt = """
 - ✅ 布局用的包裹元素（不影响数据绑定的外层 div）
 
 ### 布局一致性规则（必须遵守 GEMINI.md 全局规则）
-
 修改布局时，必须保持与项目其他页面的一致性：
 
 **蒙版/覆盖层定位**（重点）：
@@ -57,15 +54,12 @@ prompt = """
 - 优先使用 CSS 变量（`var(--spacing-md)`）而非硬编码
 
 ### 修改前必须检查
-
 1. 找出所有 `v-model`、`:xxx`、`@xxx` → **标记为不可动**
 2. 找出所有布局相关的 div、el-row、el-col → **可以优化**
 3. 确保修改后所有绑定关系保持不变
+</constraints>
 
----
-
-## 分析步骤
-
+<execution_path>
 ### 1. 识别输入类型
 - 文件路径：读取文件内容分析
 - URL：分析页面结构
@@ -85,29 +79,24 @@ prompt = """
 - 只调整布局结构
 - 保持所有绑定不变
 - 使用 Element Plus 标准布局组件
+</execution_path>
 
----
+<output_format>
+请在 `<thinking>` 标签中列出不可修改的部分和具体重构方案。
 
-## 技术约束
-
-- 框架：Vue 3 + Composition API + TypeScript
-- UI 库：Element Plus
-- 样式：scoped CSS，禁止渐变和装饰性元素
-- 布局：el-container / el-row / el-col
-
----
-
-## 输出格式
+<thinking>
+1. 收集和固定所有 v-model、props、emit...
+2. 分析当前布局与 Element Plus 最佳实践的差异...
+3. 设计安全的 DOM 层级与样式更新方案...
+</thinking>
 
 ### 1. 绑定关系确认（必须列出）
-
 **以下绑定保持不变**：
 - `v-model="xxx"` → 保留
 - `:prop="xxx"` → 保留
 - `@event="xxx"` → 保留
 
 ### 2. 布局分析
-
 **当前问题**：
 1. [问题1]
 2. [问题2]
@@ -117,7 +106,6 @@ prompt = """
 - [改进2]
 
 ### 3. 重构代码
-
 ```vue
 <template>
   <!-- 重构后的布局代码 -->
@@ -134,7 +122,6 @@ prompt = """
 ```
 
 ### 4. 变更检查
-
 | 检查项 | 状态 |
 |--------|------|
 | v-model 绑定 | ✅ 未修改 |
@@ -147,4 +134,5 @@ prompt = """
 ---
 
 请使用简体中文输出，代码必须完整可运行，所有绑定关系必须保持不变。
+</output_format>
 """

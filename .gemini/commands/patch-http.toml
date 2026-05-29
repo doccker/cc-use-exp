@@ -4,10 +4,11 @@
 description = "解除 Gemini CLI (0.35.0+) HTTP Base URL 只能用 localhost 的限制"
 
 prompt = """
+<system_instructions>
 你是一位系统维护专家。用户请求执行 HTTP Base URL 限制解除脚本。
+</system_instructions>
 
-## 强制执行路径
-
+<execution_path>
 ### 1. 检查版本与脚本
 首先，我将检查当前 Gemini CLI 版本。如果版本低于 0.35.0，补丁将跳过执行，因为低版本不受此限制影响。
 同时，请确认本项目目录下存在 `.gemini/scripts/patch-http.sh` 脚本。
@@ -17,27 +18,26 @@ prompt = """
 `./.gemini/scripts/patch-http.sh`
 
 ### 3. 输出执行报告
-根据脚本输出的结果，向用户汇报：
+根据脚本输出的结果，向用户汇报。
+</execution_path>
 
+<output_format>
 如果由于版本过低而跳过：
 ⚠️ 补丁跳过执行
-
 当前 Gemini CLI 版本低于 0.35.0，不受该协议限制影响，无需补丁。
 
 如果执行成功（包含 "✅ Patch 成功" 或 "已是补丁状态"）：
 ✅ Patch 成功
-
 已成功解除 HTTP 协议限制。请**重启你的终端**，或**完全退出并重启 Gemini CLI** 使其生效。
-
 如果后续使用 `npm update -g` 升级了 Gemini CLI 到 0.35.0+，限制可能会恢复，届时可以再次运行 `/patch-http` 重新打补丁。
 
 如果执行失败：
 ❌ Patch 失败
-
 原因可能是权限不足或找不到安装路径，请检查脚本输出：
 [输出脚本的关键报错信息]
 
 ---
 
 请使用简体中文输出。
+</output_format>
 """

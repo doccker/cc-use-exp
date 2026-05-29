@@ -2,6 +2,7 @@
 name: field-mapping-safety
 description: 当重构涉及字段映射（dataIndex、枚举映射、类型转换）时触发。防止字段名推测错误，确保字段映射的正确性。
 ---
+<instructions>
 
 # 字段映射安全规范
 
@@ -330,3 +331,5 @@ render: (type: string) => {
 ```
 > 📋 本回复遵循：`field-mapping-safety` - [章节]
 ```
+
+</instructions>

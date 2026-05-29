@@ -2,6 +2,7 @@
 name: bash-style
 description: Bash 脚本与系统命令规范。禁止行尾注释，强制使用 tee/heredoc 写入，提升命令执行的可维护性。
 ---
+<instructions>
 
 # Bash 与系统命令规范
 
@@ -43,3 +44,5 @@ set -euo pipefail
 ---
 
 > 📋 本回复遵循：`bash-style` - [章节]
+
+</instructions>

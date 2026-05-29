@@ -4,6 +4,7 @@ description: >-
   当代码涉及支付回调、webhook 通知、notify_url、微信支付/支付宝回调处理时触发。
   防止回调伪造、重放攻击、金额篡改等支付安全问题。
 ---
+<instructions>
 
 # 支付回调安全规范
 
@@ -313,3 +314,5 @@ private JsonNode queryWechatOrderStatus(PaymentRecord record) {
 ```
 > 📋 本回复遵循：`payment-callback-safety` - [章节名]
 ```
+
+</instructions>

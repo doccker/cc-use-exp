@@ -2,6 +2,7 @@
 name: size-check
 description: Review changed code for reuse, quality, and efficiency, then fix any issues found. Also scans project files for size limit violations.
 ---
+<instructions>
 
 # Size Check - 代码简化与文件行数检查
 
@@ -192,3 +193,5 @@ description: Review changed code for reuse, quality, and efficiency, then fix an
 ```
 > 📋 本回复遵循：`size-check` - [功能1/功能2/功能3]
 ```
+
+</instructions>

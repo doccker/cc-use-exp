@@ -2,6 +2,7 @@
 name: query-performance-safety
 description: 当代码涉及循环内查询、批量 ID 查询、IN 子句、BFS/递归遍历、嵌套 service 调用时触发。防止 N+1 查询、IN 子句过长、递归内存炸裂等性能陷阱。
 ---
+<instructions>
 
 # 查询性能安全规范
 
@@ -483,3 +484,5 @@ public User findById(Long tenantId, Long id) { ... }
 ```
 > 📋 本回复遵循：`query-performance-safety` - [章节名]
 ```
+
+</instructions>

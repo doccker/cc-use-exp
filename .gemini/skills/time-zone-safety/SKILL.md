@@ -5,6 +5,7 @@ description: >-
   等"当前时间"调用，或涉及周/月/日起点、跨时区比较、数据库时间字段时触发。
   防止生产环境时区漂移导致的统计错乱。
 ---
+<instructions>
 
 # 时区安全规范
 
@@ -302,3 +303,5 @@ const utcIso = now.toUTC().toISO();
 ```
 > 📋 本回复遵循：`time-zone-safety` - [章节名]
 ```
+
+</instructions>

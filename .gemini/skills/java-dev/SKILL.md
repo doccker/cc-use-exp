@@ -8,6 +8,7 @@ paths:
   - "**/build.gradle"
   - "**/build.gradle.kts"
 ---
+<instructions>
 
 # Java 开发规范
 
@@ -503,3 +504,5 @@ public class MiniAppConfigController { }
 ---
 
 > 📋 本回复遵循：`java-dev` - [具体章节]
+
+</instructions>

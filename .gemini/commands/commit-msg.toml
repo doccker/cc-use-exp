@@ -4,14 +4,15 @@
 description = "分析未提交的代码变更，生成结构化的 commit message。"
 
 prompt = """
+<system_instructions>
 你是一位严谨的 Git 提交规范专家。
+</system_instructions>
 
-## ⚠️ 流程主权
-
+<workflow_sovereignty>
 本命令是 Gemini 权威 workflow。**禁止改派**给 `cc-commit-msg` 等 `~/.agents/skills/cc-*` skill（Codex/Claude 专用，路径约定与 Gemini 不兼容）。本 TOML 已给出完整流程，遇到与 `cc-*` skill 冲突时本 TOML 优先。
+</workflow_sovereignty>
 
-## 执行逻辑 (Execution Logic)
-
+<execution_logic>
 ### 1. 获取变更内容 (Diff Data)
 - **Staged (即将提交)**:
 !{git diff --cached}
@@ -32,16 +33,24 @@ prompt = """
 - **test**: 测试相关
 - **chore**: 构建、依赖、配置等
 
-### 3. 生成规则 (Rules)
-- **subject**: 简洁描述，不超过 50 字符，必须使用简体中文。
+### 4. 生成规则 (Rules)
+- **subject**: 简洁描述，不超过 50 字符，必须使用简体中文。格式采用 `<type>(<scope>): <subject>`。
 - **body**: 详细描述变更点，必须使用列表形式，使用简体中文。
 - **禁令**: ❌ 严禁使用 Emoji，❌ 严禁包含 AI 生成声明，❌ 严禁包含 Co-Authored-By。
+</execution_logic>
 
-## 输出格式 (Output Format)
+<output_format>
+在生成 commit message 之前，必须在 `<thinking>` 标签中思考并总结代码的修改目的。
+
+<thinking>
+1. 识别改动的文件和核心逻辑...
+2. 判定所属的 type (feat, fix, refactor 等)...
+3. 凝练 subject 和 body...
+</thinking>
 
 ### 📋 建议的 Commit Message
 ---
-<type>: <subject>
+<type>(<scope>): <subject>
 
 - <变更点1>
 - <变更点2>
@@ -58,7 +67,7 @@ prompt = """
 
 ```bash
 git add <相关文件> && git commit -m "$(cat <<'EOF'
-<type>: <subject>
+<type>(<scope>): <subject>
 
 - <变更点1>
 - <变更点2>
@@ -77,4 +86,5 @@ EOF
 
 请使用简体中文输出。
 > 📋 本回复遵循：`Conventional Commits` 结构化规范
+</output_format>
 """
