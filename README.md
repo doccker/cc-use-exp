@@ -671,6 +671,10 @@ bash <(curl -sL https://raw.githubusercontent.com/doccker/cc-use-exp/main/tools/
 仓库根目录维护的 `AGENTS.md` 由 Copilot Coding Agent 优先读取，与 `copilot-instructions.md` 共存。Copilot CLI 还支持个人级 `~/.copilot/copilot-instructions.md`。
 
 ---
+## 致谢
+
+感谢 linux.do 社区的反馈和支持。
+
 
 ## 许可声明
 
