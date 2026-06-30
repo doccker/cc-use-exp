@@ -1,3 +1,5 @@
-name: cc-java-dev
-description: Java 开发规范，包含命名约定、异常处理、Spring Boot 最佳实践等
-implicit: true
+interface:
+  display_name: "cc-java-dev"
+  short_description: "Java 与 Spring Boot 开发规范、DTO 更新、分页和测试约束。"
+policy:
+  allow_implicit_invocation: true

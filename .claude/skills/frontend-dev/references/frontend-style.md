@@ -825,6 +825,142 @@ npm install -D rollup-plugin-visualizer
 
 ---
 
+## 11. 前端高频陷阱
+
+> 从实际踩坑中提炼的通用问题模式，适用于 Vue 3、React、Vite 及其他前端框架。
+
+### 11.1 HMR 累积态破坏 scoped CSS（Vite）
+
+**症状**：多次连续 HMR（多个 `.vue` / `.css` 同时修改）后，某个页面的布局完全错乱——元素位置偏移、宽度撑满、scoped 样式失效。**硬刷新（Cmd+Shift+R）可能恢复，优先怀疑 HMR 累积态，再排查代码问题**。
+
+**根因**：
+- Vite 对多个文件同时进行 HMR 时，`<style scoped src="@/assets/styles/auth-login.css">` 这种写法偶发性丢失 `data-v-xxx` 注入
+- scoped CSS 失效 → 组件样式被全局样式覆盖 → layout 错乱
+- **先用硬刷新区分 HMR 累积态和真实样式问题**，不要直接断言"不是代码缺陷"
+
+**修复流程**：
+1. **先硬刷新（Cmd+Shift+R）**：如果恢复正常 → HMR 累积态，代码无问题
+2. 如果仍异常，排查真实的样式/代码问题
+3. 只有项目确实在使用 PWA/Service Worker（如 vite-plugin-pwa）时，才去 DevTools → Application → Service Workers → Unregister
+3. 再刷新一次
+
+**预防**：`<style scoped src="...">` 写法风险高于 `<style scoped>` 内联样式，优先在组件内写 scoped 样式而非从外部 import。
+
+### 11.2 组件/表格列三处同步
+
+> 后端新增字段、前端新增列或 Tab 时，必须同步检查三处。
+
+**场景 1：表格新增列**
+
+```typescript
+// 三处必须同时加：
+// 1. 列定义（columns 数组）
+{ key: 'leijueCategoryMap', title: '雷珏分类映射', width: 200 },
+
+// 2. 列显隐开关（ALL_COL_KEYS）
+const ALL_COL_KEYS = ['name', 'category', 'leijueCategoryMap', /* 原来已有的 */];
+
+// 3. 列显隐标签文本（用于 UI 展示）
+const columnLabels: Record<string, string> = {
+  leijueCategoryMap: '雷珏分类映射',
+};
+```
+
+**场景 2：新增 Tab 页**
+
+```typescript
+// 组件文件存在 ≠ 已注册到路由/Tab
+// 必须检查是否有类似以下配置引用了该组件
+const items = [
+  { key: 'products', label: '商品列表', children: <ProductManagement /> },
+  { key: 'leijue', label: '雷珏分类映射', children: <LeijueCategoryMap /> }, // 新增这行！
+];
+```
+
+**检查清单**：
+- [ ] 列定义（columns）是否已添加
+- [ ] 列显隐开关（ALL_COL_KEYS / columnKeys 等）是否已包含
+- [ ] 列显隐标签文本（columnLabels）是否已对应
+- [ ] 如果新增 Tab/路由：配置数组是否已引用组件
+
+### 11.3 useCallback 闭包引用过期
+
+**症状**：`useCallback` 依赖 `[selectedParent?.id]`，触发回调时闭包内用的是旧 `selectedParent` 对象，`selectedParent.children` 或 `selectedParent.someMethod()` 取到的是过期值。
+
+**根因**：
+```tsx
+// ❌ 错误：依赖只检查 id，闭包捕获了旧对象引用
+const loadCategories = useCallback(() => {
+  // selectedParent 对象引用仍是旧的
+  if (selectedParent?.children) { ... }
+}, [selectedParent?.id]);
+
+// ✅ 正确：直接依赖对象引用
+const loadCategories = useCallback(() => {
+  if (selectedParent?.children) { ... }
+}, [selectedParent]);
+```
+
+**判定规则**：`useCallback` 的依赖数组必须覆盖回调内实际读取的所有 reactive values。如果闭包内只用了 `selectedParent?.id` 这一属性，依赖 `[selectedParent?.id]` 就够；如果闭包内访问了对象的属性（`.children`、`.someMethod()`、API 参数），则依赖应使用对象引用本身 `[selectedParent]`。
+
+### 11.4 controlled vs uncontrolled 误用（antd 高频）
+
+> 核心已在 SKILL.md 中描述。此处简记检查清单：
+
+**判定规则**：要么"传值 + 监听"全套，要么用 `defaultXxx`。**不要只传值不监听**。
+
+- antd Table `pagination={{ pageSize: 20 }}` → 用户切页/每页条数立即被覆盖
+- antd Tree `defaultExpandAll` + setState → 每次 render 重置回全展开
+- antd Tabs `activeKey` 无 `onChange` → 用户点击 Tab 不切换
+
+### 11.5 useEffect 双轮询冲突
+
+> 一个 `setTimeout` 递归 polling 和一个 `setInterval` polling 并存，导致每次触发 2 次接口。`setInterval` 的 useEffect 重建 → 旧定时器残留。
+
+**修复**：只能用一套 polling 机制（详见 SKILL.md 陷阱 #3）。
+
+### 11.6 异步任务前端配合
+
+> 后端同步接口超时（30s+），前端不需要加 timeout 重试。后端改为 trigger + polling 模式时，前端配合实现：
+
+| UX 项 | 实现 |
+|-------|------|
+| 触发按钮 RUNNING 状态 | `loading + disabled`，文案变 `"回填中 N%"` |
+| 顶部进度提示 | `<Alert type="info">` + `<Progress percent={N} />` |
+| mount 时检查状态 | 任意用户进来都能看到进度 |
+| 完成时自动刷主列表 | `useEffect` 监听 status 变化 |
+| 错误透传 | `state.errorMessage` 直接 `message.error()` |
+
+### 11.7 跨组件状态同步（revision counter 模式）
+
+> Redux/Zustand 引入太重，prop drilling 又麻烦的场景：用 revision counter。
+
+```tsx
+// 父级维护 counter
+const [categoryRevision, setCategoryRevision] = useState(0);
+const bump = () => setCategoryRevision(n => n + 1);
+
+// 子组件 useEffect 监听
+useEffect(() => {
+  if (categoryRevision > 0) loadCategories();
+}, [categoryRevision]);
+```
+
+### 11.8 请求体完整性
+
+> 用户选择的字段必须全部传入 API，用 TypeScript interface 约束请求体防止遗漏。
+
+```typescript
+// ❌ 支付方式 UI 存在，但请求体没传 payMethod
+// ✅ 用 interface 类型约束确保字段全部传入
+interface CreateOrderRequest {
+  items: OrderItem[]
+  payMethod: 'wechat' | 'points' | 'mixed'
+}
+```
+
+---
+
 ## 规则溯源要求
 
 当回复明确受到本规则约束时，在回复末尾声明：

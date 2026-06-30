@@ -825,6 +825,124 @@ npm install -D rollup-plugin-visualizer
 
 ---
 
+## 11. 前端高频陷阱
+
+> 从实际踩坑中提炼的通用问题模式，适用于 Vue 3、React、Vite 及常见组件库。
+
+### 11.1 HMR 状态与 scoped CSS 诊断
+
+**症状**：开发环境连续 HMR 后，页面布局突然错乱、元素宽度异常或 scoped 样式看起来失效。
+
+**判定**：先区分 HMR 临时状态和真实代码缺陷。硬刷新能恢复时，优先怀疑 dev server/HMR 状态或浏览器缓存；硬刷新后仍稳定复现，才按 CSS 作用域、样式覆盖、构建配置继续排查。
+
+**检查流程**：
+
+1. 硬刷新页面，确认是否恢复。
+2. DevTools 检查目标元素是否仍有 Vue scoped attribute（如 `data-v-xxx`）。
+3. 检查样式来源，确认是 scoped 样式缺失、优先级被覆盖，还是全局 CSS 污染。
+4. 只有项目确实注册了 Service Worker / PWA 时，才检查并 unregister Service Worker。
+
+**建议**：`<style scoped src="...">`、外部 CSS、全局样式和组件内 scoped 样式混用时，优先用浏览器 Styles 面板确认真实生效来源，不要只凭代码推断。
+
+### 11.2 组件/表格列三处同步
+
+后端新增字段、前端新增列或 Tab 时，检查配置入口是否完整。
+
+```typescript
+// 表格列新增时常见三处:
+const columns = [
+  { key: 'categoryMap', title: '分类映射', width: 200 },
+]
+
+const allColumnKeys = ['name', 'category', 'categoryMap']
+
+const columnLabels: Record<string, string> = {
+  categoryMap: '分类映射',
+}
+```
+
+新增 Tab/路由时，组件文件存在不代表已经注册到配置数组。同步检查 route、tabs/items、菜单权限和懒加载入口。
+
+### 11.3 useCallback 闭包依赖
+
+`useCallback` / `useEffect` 的依赖应覆盖回调中实际读取的 reactive value。不要为了减少触发而只写 `selectedParent?.id`，同时在闭包内读取 `selectedParent.children` 或调用对象方法。
+
+```tsx
+// ❌ 依赖只覆盖 id,但闭包读取了整个对象
+const loadCategories = useCallback(() => {
+  if (selectedParent?.children) {
+    setRows(selectedParent.children)
+  }
+}, [selectedParent?.id])
+
+// ✅ 依赖覆盖实际读取的对象
+const loadCategories = useCallback(() => {
+  if (selectedParent?.children) {
+    setRows(selectedParent.children)
+  }
+}, [selectedParent])
+
+// ✅ 只读取原始值时,先解构出明确依赖
+const parentId = selectedParent?.id
+const loadChildren = useCallback(() => {
+  if (parentId) fetchChildren(parentId)
+}, [parentId])
+```
+
+原则：依赖列表不是“业务上用于判断变化的字段”，而是闭包实际读取的值集合。
+
+### 11.4 controlled vs uncontrolled 误用
+
+组件库受控组件要么传值并监听变化，要么使用 `defaultXxx`。不要只传受控值却不处理 `onChange`。
+
+- antd Table `pagination={{ pageSize: 20 }}` 但不维护分页变化，用户切页会被重置。
+- antd Tabs `activeKey` 无 `onChange`，用户点击 Tab 不切换。
+- Tree/Collapse 等组件混用 `defaultXxx` 和后续状态更新时，先确认组件是否已经变成受控模式。
+
+### 11.5 双轮询冲突
+
+同一数据源不要同时存在 `setInterval` 和递归 `setTimeout` 轮询。保留一套机制，并在组件卸载、任务完成、依赖变化时清理。
+
+### 11.6 异步任务前端配合
+
+后端从同步接口改为 trigger + polling 后，前端应配合任务状态，而不是给长请求叠加 timeout/retry。
+
+| UX 项 | 实现 |
+|-------|------|
+| 触发按钮 | `loading + disabled`，展示当前状态或进度 |
+| 顶部进度提示 | Alert/Progress/状态文本 |
+| mount 时检查状态 | 任意用户进入页面都能看到进行中的任务 |
+| 完成后刷新 | 监听任务状态变化后刷新主列表 |
+| 错误透传 | 展示后端返回的 `errorMessage` 或等价字段 |
+
+### 11.7 跨组件状态同步
+
+轻量刷新通知可以用 revision counter,避免为一次性刷新引入过重状态库。
+
+```tsx
+const [categoryRevision, setCategoryRevision] = useState(0)
+const bumpCategoryRevision = () => setCategoryRevision(n => n + 1)
+
+useEffect(() => {
+  if (categoryRevision > 0) {
+    loadCategories()
+  }
+}, [categoryRevision])
+```
+
+### 11.8 请求体完整性
+
+用户在 UI 中选择的字段必须全部进入 API 请求体。用 TypeScript interface 或 schema 约束请求体,避免 UI 有字段、提交时遗漏字段。
+
+```typescript
+interface CreateOrderRequest {
+  items: OrderItem[]
+  payMethod: 'wechat' | 'points' | 'mixed'
+}
+```
+
+---
+
 ## 规则溯源要求
 
 当回复明确受到本规则约束时，在回复末尾声明：

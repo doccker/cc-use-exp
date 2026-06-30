@@ -1,3 +1,5 @@
-name: cc-frontend-dev
-description: 前端开发规范，包含 Vue 3 编码规范、UI 风格约束、TypeScript 规范等
-implicit: true
+interface:
+  display_name: "cc-frontend-dev"
+  short_description: "前端开发规范：Vue、React、TypeScript、组件库与常见状态陷阱。"
+policy:
+  allow_implicit_invocation: true

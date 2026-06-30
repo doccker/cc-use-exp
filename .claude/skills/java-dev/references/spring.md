@@ -166,6 +166,55 @@ int reparent(...);
 
 ---
 
+## DTO 静默忽略陷阱
+
+Spring Boot 反序列化时，**DTO 中没有的字段只是静默丢掉，不报错**。API 返回 200 不代表所有字段都更新成功。
+
+```java
+// ❌ 请求体包含 brandId: 1，但 DTO 没有 brandId 字段
+// Spring Boot 直接丢弃，不报错
+// API 返回 200，但 brandId 未更新
+@Data
+public class UpdateProductRequest {
+    private String name;
+    private BigDecimal price;
+    // brandId, marketPrice, tagIds 字段缺失！
+}
+
+// ✅ 必须显式定义所有能更新的字段
+@Data
+public class UpdateProductRequest {
+    private String name;
+    private BigDecimal price;
+    private Long brandId;          // 新增
+    private BigDecimal marketPrice; // 新增
+    private List<Long> tagIds;     // 新增
+}
+```
+
+### 排查方法
+
+1. **对比请求体与响应体**：提交 `{brandId: 1}`，检查响应体中的 `brandId` 是否变为 1。如果仍是旧值 → DTO 缺字段
+2. **用 `curl -v` 或 HTTP 工具查看完整往返**：前端和浏览器 Network 面板看到的响应可能已经过前端逻辑处理，不一定是后端原始响应
+
+### 后端已有独立端点 ≠ 主更新接口已包含
+
+```
+PUT  /products/{id}/brand       ← 存在，只更新 brand
+PUT  /products/{id}             ← 也存在，但 DTO 没处理 brandId
+```
+
+`/products/{id}/brand` 存在 ≠ `PUT /products/{id}` 已经处理了 `brandId`。每次修改都要**同步检查 DTO + Service 两个地方**。
+
+### 检查清单
+
+- [ ] DTO 字段是否定义了所有前端能提交的字段
+- [ ] 前端提交了字段、API 返回 200、但 DB 没更新 → 对比请求体与响应体
+- [ ] 后端已有独立端点（如 `/products/{id}/brand`）时，主更新接口（如 `PUT /products/{id}`）是否也已包含对应字段
+- [ ] 新增字段是否在 `Service` 层有赋值逻辑（不只是 DTO 有字段）
+
+---
+
 ## 分页参数规范（Spring Data JPA）
 
 Spring Data JPA 分页索引从 0 开始。重构分页参数时必须确保前后端索引基准一致。

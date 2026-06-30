@@ -113,6 +113,7 @@ template- 文件踩坑填完后请改名为 `case-`,保持语义清晰。
 
 - [CSDN paste 列表 bug](references/case-csdn-paste-list.md) — HTML→MD 丢 start 属性导致 4 个 "1." 和巨大间距
 - [HTTP CDN/WAF 拦截](references/case-http-cdn-waf.md) — body 空 + headers 极简,GET 正常 POST 异常
+- [代理关键词子串匹配误判](references/case-proxy-keyword-misjudge.md) — 正常长正文含 Cloudflare/502 等技术术语被代理误判为上游错误
 - [浏览器粘贴行为差异(template)](references/template-browser-paste-format.md) — 待补充
 
 ---

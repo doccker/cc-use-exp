@@ -1,18 +1,6 @@
 ---
 name: cc-frontend-dev
 description: 前端开发规范，包含 Vue 3 编码规范、UI 风格约束、TypeScript 规范等
-version: v3.0
-paths:
-  - "**/*.vue"
-  - "**/*.tsx"
-  - "**/*.jsx"
-  - "**/*.ts"
-  - "**/*.js"
-  - "**/*.css"
-  - "**/*.scss"
-  - "**/*.less"
-  - "**/package.json"
-  - "**/vite.config.*"
 ---
 
 # 前端开发规范

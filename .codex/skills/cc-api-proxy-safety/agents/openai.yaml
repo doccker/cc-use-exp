@@ -1,0 +1,6 @@
+interface:
+  display_name: "cc-api-proxy-safety"
+  short_description: "代理/WAF/CDN 响应判定与关键词误判防护"
+  default_prompt: "Use $cc-api-proxy-safety 检查代理或网关响应匹配逻辑是否会误判正常正文。"
+policy:
+  allow_implicit_invocation: true

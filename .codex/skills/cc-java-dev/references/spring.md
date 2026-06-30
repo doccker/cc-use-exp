@@ -1,6 +1,6 @@
 # Spring Boot 进阶规范
 
-> 注入方式、Auth 降级、循环依赖防范、self-invocation 陷阱、分页参数规范
+> 注入方式、Auth 降级、循环依赖防范、self-invocation 陷阱、DTO 静默忽略、分页参数规范
 
 ---
 
@@ -163,6 +163,54 @@ int reparent(...);
 - [ ] `@Async` 方法是否在另一个类中（或通过 self proxy）
 - [ ] 看到 `Executing an update/delete query` 错误，先排查 self-invocation
 - [ ] `bulkXxx` 类批量方法本身是否需要 `@Transactional`（取决于"全部成功" vs "逐条独立事务"语义）
+
+---
+
+## DTO 静默忽略陷阱
+
+更新接口返回 200 只代表请求已被处理,不代表请求体里的每个字段都进入 DTO、经过 Service 赋值并最终落库。项目如果关闭未知字段失败,请求体中 DTO 未声明的字段会在反序列化阶段被忽略;即使 DTO 已声明字段,Service 未赋值也同样不会更新。
+
+```java
+// ❌ 请求体包含 brandId: 1,但 DTO 没有 brandId 字段
+// 结果:接口可能返回 200,但 brandId 没有进入更新逻辑
+@Data
+public class UpdateProductRequest {
+    private String name;
+    private BigDecimal price;
+}
+
+// ✅ 显式定义主更新接口能接收的字段
+@Data
+public class UpdateProductRequest {
+    private String name;
+    private BigDecimal price;
+    private Long brandId;
+    private BigDecimal marketPrice;
+    private List<Long> tagIds;
+}
+```
+
+### 排查方法
+
+1. 对比原始请求体、原始响应体和数据库结果。前端页面状态不等于后端真实响应。
+2. 检查 DTO 是否声明字段,再检查 Service 是否实际赋值。
+3. 检查项目 Jackson 配置是否允许未知字段被忽略,例如 `FAIL_ON_UNKNOWN_PROPERTIES` 相关配置。
+
+### 后端已有独立端点 ≠ 主更新接口已包含
+
+```
+PUT /products/{id}/brand   ← 只更新 brand
+PUT /products/{id}         ← 主更新接口,也需要显式处理 brandId 才会更新
+```
+
+独立端点存在,不代表主更新接口已经处理同一字段。新增可编辑字段时,同步检查 DTO、Mapper/Service、响应 DTO 和测试。
+
+### 检查清单
+
+- [ ] 请求体字段是否全部在 DTO 中声明
+- [ ] DTO 字段是否在 Service 更新逻辑中赋值
+- [ ] 主更新接口是否覆盖了前端页面所有可编辑字段
+- [ ] API 返回 200 但 DB 没更新时,是否已对比原始 request/response 和数据库
 
 ---
 
