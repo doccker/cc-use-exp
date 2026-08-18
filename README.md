@@ -696,7 +696,7 @@ bash <(curl -sL https://raw.githubusercontent.com/doccker/cc-use-exp/main/tools/
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=doccker/cc-use-exp&type=Date)](https://star-history.com/#doccker/cc-use-exp&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=doccker/cc-use-exp&type=Date)](https://star-history.dera.page/#doccker/cc-use-exp&Date)
 
 ## Contributors
 
